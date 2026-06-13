@@ -7,7 +7,7 @@ Contains functions for using NTP to get offset ( might change later)
 import ntplib
 import asyncio
 import inspect
-from timeanchor import TimeAnchor, OffsetAnchor
+from timeanchor import OffsetAnchor
 from decorators import verify_drift
 
 # Class
