@@ -7,6 +7,8 @@ Contains functions for using NTP to get offset ( might change later)
 import ntplib
 import asyncio
 import inspect
+from timeanchor import TimeAnchor, OffsetAnchor
+from decorators import verify_drift
 
 # Class
 
@@ -19,8 +21,6 @@ class NTPUpdater:
         interval: time interval in seconds between each NTP sync
         '''
         self.interval = interval
-        self.offset = 0.0
-
         self._subscribers = [] # functions that are run every time there is a new offset
 
     def subscribe(self,callback:function):
@@ -43,9 +43,10 @@ class NTPUpdater:
             response = await loop.run_in_executor(None, lambda: client.request(server, version=4, timeout=1.5))
             return {'offset': response.offset, 'delay': response.delay, 'server': server}
         except Exception as e:
-            print(f'Server {server} Critical Error: {e}')
+            #print(f'Server {server} Critical Error: {e}')
             return None
 
+    @verify_drift # make sure system doesnt NTP sync mid-way through this function
     async def get_best_offset(self):
         '''
         Queries multiple NTP servers and returns the offset from the 
@@ -75,29 +76,36 @@ class NTPUpdater:
             return None # return None if no servers responded
         
         best_sample = min(valid_results, key=lambda result: result['delay'])
+
         print(f"Best Source: {best_sample['server']} (Delay: {best_sample['delay']*1000:.2f}ms)")
-        return best_sample['offset']
-        
+
+        new_offset = best_sample['offset']
+        new_offset_anchor = OffsetAnchor(new_offset)
+        return new_offset_anchor
+    
+    async def update_offset(self):
+        '''
+        Updates the offset and initates subscribed callbacks
+        '''
+        new_offset_anchor = await self.get_best_offset()
+        if new_offset_anchor is not None:
+            print(f'New Offset is {new_offset_anchor.offset}')
+            for callback in self._subscribers:
+                try:
+                    # callback can be async or regular
+                    if inspect.iscoroutinefunction(callback):
+                        await callback(new_offset_anchor) # add support for more args I think
+                    else:
+                        callback(new_offset_anchor)
+                except Exception as e:
+                    print(f'Callback Error: {e}')
+
     async def start(self):
         '''
-        Starts the loop to sync once every interval
+        Starts the loop to update offset once every interval
         '''
         while True:
-            new_offset = await self.get_best_offset()
-            if new_offset is not None:
-                self.offset = new_offset
-                print(f'New Offset is {new_offset}')
-
-                for callback in self._subscribers:
-                    try:
-                        # callback can be async or regular
-                        if inspect.iscoroutinefunction(callback):
-                            await callback(new_offset)
-                        else:
-                            callback(new_offset)
-                    except Exception as e:
-                        print(f'Callback Error: {e}')
-
+            await self.update_offset()
             await asyncio.sleep(self.interval)
 
 
