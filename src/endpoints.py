@@ -5,8 +5,10 @@ Contains python endpoints for more precise times.
 # Imports
 
 from ntpfunctions import NTPUpdater
+from timeanchor import OffsetAnchor
 import asyncio
 import time
+import threading
 
 class SimpleEndpoint:
     '''
@@ -17,30 +19,43 @@ class SimpleEndpoint:
         '''
         interval: time interval in seconds between each NTP sync
         '''
+        self._lock = threading.Lock()
+        
         updater = NTPUpdater(interval)
         updater.subscribe(self.callback)
-        asyncio.run(updater.start())
+        syncthread = threading.Thread(
+            target=lambda: asyncio.run(updater.worker()), # necessary because worker is async
+            daemon=True
+            )
+        syncthread.start()
 
-        self.offset_anchor = None
+        self.offset_anchor = OffsetAnchor(0)
 
     def callback(self, offset_anchor):
         '''
         Callback for each sync.
         Stores the offset_anchor object locally.
         '''
-        self.offset_anchor = offset_anchor
+        with self._lock:
+            self.offset_anchor = offset_anchor
 
     def now(self):
         '''
         Returns float containing current, corrected time in seconds
         '''
-        perf_delta = time.perf_counter_ns() - self.offset_anchor.perf_ref
-        return (time.time_ns() + perf_delta)*10**-9 + self.offset_anchor.offset
+        # Get the class-wide anchor under lock
+        with self._lock:
+            offset_anchor = self.offset_anchor
+        # use local copy to do math
+        perf_delta = time.perf_counter_ns() - offset_anchor.perf_ref
+        return (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
     
 
 
 if __name__ == '__main__':
-    endpoint = SimpleEndpoint()
-    print('ok')
-    time.sleep(2)
-    print(endpoint.now())
+    endpoint = SimpleEndpoint(interval=5)
+
+    # run until keyboard interrupt
+    while True:
+        time.sleep(2)
+        print(endpoint.now())

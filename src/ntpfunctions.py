@@ -52,7 +52,8 @@ class NTPUpdater:
         Queries multiple NTP servers and returns the offset from the 
         server with the lowest network delay (latency).
 
-        Returns clock error in seconds, to be added to current time
+        Returns OffsetAnchor object, with attribute offset (seconds) to 
+        be added to current time.
         '''
         servers = [
             "time.google.com", 
@@ -100,7 +101,7 @@ class NTPUpdater:
                 except Exception as e:
                     print(f'Callback Error: {e}')
 
-    async def start(self):
+    async def worker(self):
         '''
         Starts the loop to update offset once every interval
         '''
@@ -111,4 +112,4 @@ class NTPUpdater:
 
 if __name__ == '__main__':
     updater = NTPUpdater(5)
-    asyncio.run(updater.start())
+    asyncio.run(updater.worker())
