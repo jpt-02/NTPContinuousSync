@@ -6,6 +6,7 @@ Contains functions for using NTP to get offset ( might change later)
 
 import ntplib
 import asyncio
+import threading
 import inspect
 from timeanchor import OffsetAnchor
 from decorators import verify_drift
@@ -109,7 +110,25 @@ class NTPUpdater:
             await self.update_offset()
             await asyncio.sleep(self.interval)
 
+    def run_async(self):
+        '''
+        Runs the updater using asyncio - blocking
+        (not recommended for fast reponse times)
+        '''
+        asyncio.run(self.worker())
+
+    def run_threaded(self):
+        '''
+        Runs the updater using threads - not blocking
+        (Recommended for fast response)
+        '''
+        syncthread = threading.Thread(
+            target=lambda: asyncio.run(updater.worker()), # necessary because worker is async
+            daemon=True
+            )
+        syncthread.start()
+
 
 if __name__ == '__main__':
     updater = NTPUpdater(5)
-    asyncio.run(updater.worker())
+    updater.run_threaded()
