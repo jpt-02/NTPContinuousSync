@@ -5,6 +5,7 @@ Contains python endpoints for more precise times.
 # Imports
 
 from timeanchor import OffsetAnchor
+from ntpfunctions import NTPUpdater
 import time
 import threading
 
@@ -37,8 +38,8 @@ class TruthEndpoint:
             self.offset_anchor = offset_anchor
 
         perf_delta = time.perf_counter_ns() - offset_anchor.perf_ref
-        truth = (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
-        self.push(truth)
+        true_time = (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
+        self.push(true_time)
 
 
 class SimpleEndpoint:
@@ -70,15 +71,26 @@ class SimpleEndpoint:
         perf_delta = time.perf_counter_ns() - offset_anchor.perf_ref
         return (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
     
+    def easy_setup(self, interval:int=300):
+        '''
+        Creates an NTPUpdater and subscribes the endpoint to it
+
+        interval: seconds between each sync
+        run_forever: if True, starts a while loop to run until 
+            keyboard interrupt. Only really used for testing.
+        '''
+        updater = NTPUpdater(interval=5)
+        updater.subscribe(self.callback)
+        updater.run_threaded()
 
 
 if __name__ == '__main__':
     
-    from ntpfunctions import NTPUpdater
-
     endpoint = SimpleEndpoint()
     updater = NTPUpdater(interval=5)
     updater.subscribe(endpoint.callback)
+    updater.run_threaded()
+    #endpoint.easy_setup(interval=5)
 
 
 

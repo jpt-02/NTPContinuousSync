@@ -102,7 +102,7 @@ class NTPUpdater:
                 except Exception as e:
                     print(f'Callback Error: {e}')
 
-    async def worker(self):
+    async def _worker(self):
         '''
         Starts the loop to update offset once every interval
         '''
@@ -115,7 +115,7 @@ class NTPUpdater:
         Runs the updater using asyncio - blocking
         (not recommended for fast reponse times)
         '''
-        asyncio.run(self.worker())
+        asyncio.run(self._worker())
 
     def run_threaded(self):
         '''
@@ -123,7 +123,7 @@ class NTPUpdater:
         (Recommended for fast response)
         '''
         syncthread = threading.Thread(
-            target=lambda: asyncio.run(updater.worker()), # necessary because worker is async
+            target=lambda: asyncio.run(self._worker()), # necessary because worker is async
             daemon=True
             )
         syncthread.start()
