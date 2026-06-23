@@ -83,6 +83,16 @@ class SimpleEndpoint:
         updater.subscribe(self.callback)
         updater.run_threaded()
 
+class UnadjustedEndpoint(SimpleEndpoint):
+    '''
+    Endpoint that gives unadjusted time for reference
+    '''
+    def __init__(self):
+        super().__init__()
+
+    def now(self):
+        return time.time()
+
 
 if __name__ == '__main__':
     

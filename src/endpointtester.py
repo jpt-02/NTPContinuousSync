@@ -148,7 +148,9 @@ class EndpointTester:
 
         import matplotlib.pyplot as plt
 
-        plt.plot(self.series_error_data['iteration'], self.series_error_data['SimpleEndpoint'])
+        plt.plot(self.series_error_data['iteration'], self.series_error_data['SimpleEndpoint'],label='Simple')
+        plt.plot(self.series_error_data['iteration'], self.series_error_data['UnadjustedEndpoint'],label='Unadjusted')
+        plt.legend()
         plt.show()
 
 
@@ -157,4 +159,6 @@ class EndpointTester:
 
 if __name__ == '__main__':
     all_targets = get_all_endpoints()
-    tester = EndpointTester(2.5,15,60,all_targets)
+    tester = EndpointTester(60,900,7200,all_targets)
+    #tester = EndpointTester(1,3,30,all_targets)
+
