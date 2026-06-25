@@ -41,7 +41,6 @@ class TruthEndpoint:
         true_time = (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
         self.push(true_time)
 
-
 class SimpleEndpoint:
     '''
     An endpoint for corrected time that adds the latest offset to 
@@ -87,11 +86,60 @@ class UnadjustedEndpoint(SimpleEndpoint):
     '''
     Endpoint that gives unadjusted time for reference
     '''
-    def __init__(self):
-        super().__init__()
-
     def now(self):
         return time.time()
+
+class UseLastErrorEndpoint(SimpleEndpoint):
+    '''
+    Starts as SimpleEndpoint, but logs the error after each interval. Assumes subsequent 
+    intervals will be off by this amount and adjust accordingly.
+    '''
+    def __init__(self, interval:int):
+        '''
+        interval: time, in seconds, between each sync. Must be the same as whatever NTPUpdater
+            the endpoint is subscribed to.
+        '''
+        super().__init__()
+        self.interval = interval
+        self.slew_coefficient = 1
+        self.startup = True
+    
+    def callback(self, new_anchor):
+        '''
+        Callback for each sync.
+        Stores the offset_anchor object locally.
+        Also stores previous offset for calculations.
+        '''
+        if not self.startup:
+            with self._lock:
+                old_anchor = self.offset_anchor
+            old_perf_delta = time.perf_counter_ns() - old_anchor.perf_ref
+            old_unadjusted_now = (old_anchor.time_ref + old_perf_delta)*1e-9 + old_anchor.offset
+
+            new_perf_delta = time.perf_counter_ns() - new_anchor.perf_ref
+            new_unadjusted_now = (new_anchor.time_ref + new_perf_delta)*1e-9 + new_anchor.offset
+            # to be multiplied to the perf_delta
+            self.slew_coefficient = 1 + ((new_unadjusted_now - old_unadjusted_now)/self.interval)
+        else:
+            self.slew_coefficient = 1
+            self.startup = False
+
+        with self._lock:
+            self.offset_anchor = new_anchor
+            
+    def now(self):
+        '''
+        Returns float containing current, corrected time in seconds
+        '''
+        with self._lock:
+            offset_anchor = self.offset_anchor
+
+        perf_delta = (time.perf_counter_ns() - offset_anchor.perf_ref)*self.slew_coefficient
+        return (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
+        
+        
+
+    
 
 
 if __name__ == '__main__':

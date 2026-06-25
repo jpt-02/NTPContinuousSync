@@ -10,6 +10,7 @@ import inspect
 from ntpfunctions import NTPUpdater
 import queue
 import time
+import pandas as pd
 
 # Helper Function
 
@@ -40,17 +41,20 @@ class EndpointTester:
                  truth_interval:int, 
                  test_interval:int, 
                  test_time:int,
-                 endpoint_dict:list[(str,object)]):
+                 endpoint_dict:list[(str,object)],
+                 save_path:str = 'testdata.csv'):
         '''
         truth_interval: seconds between each true time point
         test_interval: seconds between each NTP sync for endpoints
             being tested
         test_time: total time for the test to run
         endpoint_dict: dict {name:str : endpoint object} to be tested
+        save_path: path to save data to (must end in .csv)
         '''
         self.queue = queue.Queue()
         self.truth_interval = truth_interval
         self.test_time = test_time
+        self.save_path = save_path
 
         self.endpoint_dict = endpoint_dict
         # loop through and alter any keys that are 'TruthEndpoint' just in case anyone doubles it
@@ -133,12 +137,10 @@ class EndpointTester:
 
         self.save_data()
                     
-
-
     def save_data(self):
-        # maybe use one of the real-time plotters like streamlit 
-        
-        # add x axis options to series data
+        '''
+        Formats data into time series and saves to .csv
+        '''
         data_range = len(next(iter(self.series_error_data.values())))
         iteration_list = list(range(data_range))
         approx_runtime_list = [(iteration_list[i]-1)*self.truth_interval for i in iteration_list]
@@ -146,19 +148,22 @@ class EndpointTester:
         self.series_error_data['iteration'] = iteration_list
         self.series_error_data['approx_runtime'] = approx_runtime_list
 
-        import matplotlib.pyplot as plt
+        df = pd.DataFrame(self.series_error_data)
+        metadata_cols = ['iteration', 'approx_runtime'] # make it so metadata is on the left
+        endpoint_cols = [col for col in df.columns if col not in metadata_cols]
+        df = df[metadata_cols + endpoint_cols]
 
-        plt.plot(self.series_error_data['iteration'], self.series_error_data['SimpleEndpoint'],label='Simple')
-        plt.plot(self.series_error_data['iteration'], self.series_error_data['UnadjustedEndpoint'],label='Unadjusted')
-        plt.legend()
-        plt.show()
-
-
+        df.to_csv(self.save_path, index=False)
 
 
 
 if __name__ == '__main__':
-    all_targets = get_all_endpoints()
-    tester = EndpointTester(60,900,7200,all_targets)
+    #all_targets = get_all_endpoints()
+    all_targets = {
+        'Simple': endpoints.SimpleEndpoint(),
+        'Unadjusted': endpoints.UnadjustedEndpoint(),
+        'UseLastError': endpoints.UseLastErrorEndpoint(900)
+    }
+    tester = EndpointTester(30,900,3600,all_targets)
     #tester = EndpointTester(1,3,30,all_targets)
 
