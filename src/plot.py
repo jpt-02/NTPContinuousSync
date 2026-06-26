@@ -5,6 +5,7 @@ Contains functions for plotting time series data
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import time 
 
 def plot_series_data(in_path:str = 'testdata.csv', out_path:str = None):
     '''
@@ -45,6 +46,7 @@ def plot_series_data(in_path:str = 'testdata.csv', out_path:str = None):
     # 4. Render the plot
     # This opens up a window in your default web browser instantly.
     fig.show()
+    time.sleep(5)
 
 if __name__ == '__main__':
     plot_series_data()

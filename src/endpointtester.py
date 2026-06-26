@@ -164,6 +164,6 @@ if __name__ == '__main__':
         'Unadjusted': endpoints.UnadjustedEndpoint(),
         'UseLastError': endpoints.UseLastErrorEndpoint(900)
     }
-    tester = EndpointTester(30,900,3600,all_targets)
+    tester = EndpointTester(30,900,14400,all_targets)
     #tester = EndpointTester(1,3,30,all_targets)
 
