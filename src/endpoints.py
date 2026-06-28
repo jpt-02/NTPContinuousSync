@@ -75,10 +75,8 @@ class SimpleEndpoint:
         Creates an NTPUpdater and subscribes the endpoint to it
 
         interval: seconds between each sync
-        run_forever: if True, starts a while loop to run until 
-            keyboard interrupt. Only really used for testing.
         '''
-        updater = NTPUpdater(interval=5)
+        updater = NTPUpdater(interval)
         updater.subscribe(self.callback)
         updater.run_threaded()
 
@@ -136,6 +134,16 @@ class UseLastErrorEndpoint(SimpleEndpoint):
 
         perf_delta = (time.perf_counter_ns() - offset_anchor.perf_ref)*self.slew_coefficient
         return (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
+    
+    def easy_setup(self):
+        '''
+        Creates an NTPUpdater and subscribes the endpoint to it
+
+        interval: seconds between each sync
+        '''
+        updater = NTPUpdater(self.interval)
+        updater.subscribe(self.callback)
+        updater.run_threaded()
         
         
 
