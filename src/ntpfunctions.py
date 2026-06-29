@@ -6,6 +6,7 @@ Contains functions for using NTP to get offset ( might change later)
 
 import ntplib
 import asyncio
+import threading
 import inspect
 from timeanchor import OffsetAnchor
 from decorators import verify_drift
@@ -52,7 +53,8 @@ class NTPUpdater:
         Queries multiple NTP servers and returns the offset from the 
         server with the lowest network delay (latency).
 
-        Returns clock error in seconds, to be added to current time
+        Returns OffsetAnchor object, with attribute offset (seconds) to 
+        be added to current time.
         '''
         servers = [
             "time.google.com", 
@@ -100,7 +102,7 @@ class NTPUpdater:
                 except Exception as e:
                     print(f'Callback Error: {e}')
 
-    async def start(self):
+    async def _worker(self):
         '''
         Starts the loop to update offset once every interval
         '''
@@ -108,7 +110,25 @@ class NTPUpdater:
             await self.update_offset()
             await asyncio.sleep(self.interval)
 
+    def run_async(self):
+        '''
+        Runs the updater using asyncio - blocking
+        (not recommended for fast reponse times)
+        '''
+        asyncio.run(self._worker())
+
+    def run_threaded(self):
+        '''
+        Runs the updater using threads - not blocking
+        (Recommended for fast response)
+        '''
+        syncthread = threading.Thread(
+            target=lambda: asyncio.run(self._worker()), # necessary because worker is async
+            daemon=True
+            )
+        syncthread.start()
+
 
 if __name__ == '__main__':
     updater = NTPUpdater(5)
-    asyncio.run(updater.start())
+    updater.run_threaded()
