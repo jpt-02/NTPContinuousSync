@@ -24,7 +24,7 @@ def plot_series_data(in_path:str = 'testdata.csv', out_path:str = None):
 
     fig = px.line(
         df, 
-        x="approx_runtime",  # Or use "iteration" depending on your X-axis preference
+        x="approx_runtime",  
         y=endpoint_cols,
         title="Clock Endpoint Drift Analytics vs. NTP Ground Truth",
         labels={
@@ -32,19 +32,16 @@ def plot_series_data(in_path:str = 'testdata.csv', out_path:str = None):
             "value": 'Drift Error',
             "variable": "Endpoint Type"
         },
-        template="plotly_white" # Clean, modern background template
+        template="plotly_white" 
     )
 
-    # 3. Polish up the chart interactivity features
-    fig.update_traces(mode="lines+markers", marker=dict(size=4)) # Adds small dots to track individual sync points
+    fig.update_traces(mode="lines+markers", marker=dict(size=4)) 
     fig.update_layout(
-        hovermode="x unified", # Shows all endpoint metrics simultaneously when hovering on the timeline
+        hovermode="x unified", 
         xaxis=dict(showgrid=True, zeroline=True),
         yaxis=dict(showgrid=True, zeroline=True)
     )
 
-    # 4. Render the plot
-    # This opens up a window in your default web browser instantly.
     fig.show()
     time.sleep(5)
 
