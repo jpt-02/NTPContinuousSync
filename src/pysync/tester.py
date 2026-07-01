@@ -4,8 +4,8 @@ Used for testing the accuracy of endpoints and saving/plotting data
 
 # Imports
 
-import endpoints
-from endpoints import TruthEndpoint
+import pyendpoints
+from pyendpoints import TruthEndpoint
 import inspect
 from ntpfunctions import NTPUpdater
 import queue
@@ -21,10 +21,10 @@ def get_all_endpoints():
     Returns dict {name:str : endpoint object}
     '''
     returndict = {}
-    all_classes = inspect.getmembers(endpoints, inspect.isclass)
+    all_classes = inspect.getmembers(pyendpoints, inspect.isclass)
     for name, class_ in all_classes:
         # only keep classes that are from endpoints and not TruthEndpoint
-        if (class_.__module__ == endpoints.__name__) and (name != 'TruthEndpoint'):
+        if (class_.__module__ == pyendpoints.__name__) and (name != 'TruthEndpoint'):
             returndict[name] = class_()
     return returndict
 
@@ -160,9 +160,9 @@ class EndpointTester:
 if __name__ == '__main__':
     #all_targets = get_all_endpoints()
     all_targets = {
-        'Simple': endpoints.SimpleEndpoint(),
-        'Unadjusted': endpoints.UnadjustedEndpoint(),
-        'UseLastError': endpoints.UseLastErrorEndpoint(900)
+        'Simple': pyendpoints.SimpleEndpoint(),
+        'Unadjusted': pyendpoints.UnadjustedEndpoint(),
+        'UseLastError': pyendpoints.UseLastErrorEndpoint(900)
     }
     tester = EndpointTester(30,900,14400,all_targets)
     #tester = EndpointTester(1,3,30,all_targets)

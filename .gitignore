@@ -219,3 +219,6 @@ __marimo__/
 
 # Plot data
 *.csv
+
+# vscode
+.vscode
