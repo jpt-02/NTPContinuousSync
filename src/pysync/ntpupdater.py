@@ -8,8 +8,9 @@ import ntplib
 import asyncio
 import threading
 import inspect
-from timeanchor import OffsetAnchor
-from decorators import verify_drift
+from timeanchor import TimeAnchor, OffsetAnchor
+import functools
+import time
 
 # Class
 
@@ -17,13 +18,54 @@ class NTPUpdater:
     '''
     Gets relevant NTP sync information at every specified time interval
     '''
-    def __init__(self,interval:int=300):
+    def __init__(self,
+                 interval:int=300,
+                 window:int=10000,
+                 tolerance:int=1000000):
         '''
         interval: time interval in seconds between each NTP sync
+        window: nanoseconds, acceptable window for references to be acquired
+            (see more in TimeAnchor class) TODO: implement and find optimal default value
+        tolerance: allowable system clock drift across the duration of the function that 
+            queries NTP serversf for best offset TODO: find optimal default value
         '''
         self.interval = interval
+        self.window = window
+        self.tolerance = tolerance
         self._subscribers = [] # functions that are run every time there is a new offset
 
+    @staticmethod
+    def verify_drift(func):
+        '''
+        Decorator to verify that the system time has not drifted during the duration of
+        a function. Calls function again if it has drifted.
+        '''
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(self, *args, **kwargs):
+                while True:
+                    anchor_1 = TimeAnchor(window = self.window)
+                    result = await func(self, *args, **kwargs)
+                    anchor_2 = TimeAnchor(window = self.window)
+                    if not anchor_1.has_drifted(anchor_2, self.tolerance):
+                        return result
+                    print(f'Drift out of tolerance, re-running function {func.__name__}.')
+                    await asyncio.sleep(0.1)
+            return async_wrapper
+
+        else:
+            @functools.wraps(func)
+            def sync_wrapper(self, *args, **kwargs):
+                while True:
+                    anchor_1 = TimeAnchor(window = self.window)
+                    result = func(self, *args, **kwargs)
+                    anchor_2 = TimeAnchor(window = self.window)
+                    if not anchor_1.has_drifted(anchor_2, self.tolerance):
+                        return result
+                    print(f'Drift out of tolerance, re-running function {func.__name__}.')
+                    time.sleep(0.1)
+            return sync_wrapper
+    
     def subscribe(self,callback:function):
         '''
         callback: function to be called every time there is a new offset
@@ -82,7 +124,7 @@ class NTPUpdater:
         print(f"Best Source: {best_sample['server']} (Delay: {best_sample['delay']*1000:.2f}ms)")
 
         new_offset = best_sample['offset']
-        new_offset_anchor = OffsetAnchor(new_offset)
+        new_offset_anchor = OffsetAnchor(window=self.window, offset=new_offset)
         return new_offset_anchor
     
     async def update_offset(self):
@@ -96,7 +138,7 @@ class NTPUpdater:
                 try:
                     # callback can be async or regular
                     if inspect.iscoroutinefunction(callback):
-                        await callback(new_offset_anchor) # add support for more args I think
+                        await callback(new_offset_anchor) # TODO: add support for more args I think
                     else:
                         callback(new_offset_anchor)
                 except Exception as e:
@@ -128,6 +170,7 @@ class NTPUpdater:
             )
         syncthread.start()
 
+# TODO: Make clean shutdown for async and threads
 
 if __name__ == '__main__':
     updater = NTPUpdater(5)
