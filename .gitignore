@@ -222,3 +222,6 @@ __marimo__/
 
 # vscode
 .vscode
+
+# Compiled c++
+*.exe

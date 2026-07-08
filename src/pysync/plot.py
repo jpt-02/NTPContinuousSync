@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import time 
 
-def plot_series_data(in_path:str = 'testdata.csv', out_path:str = None):
+def plot_series_data(in_path:str = 'testdata2.csv', out_path:str = None):
     '''
     Plots the series data saved from the endpoint tester class
 

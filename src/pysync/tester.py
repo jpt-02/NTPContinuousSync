@@ -7,7 +7,7 @@ Used for testing the accuracy of endpoints and saving/plotting data
 import pyendpoints
 from pyendpoints import TruthEndpoint
 import inspect
-from ntpfunctions import NTPUpdater
+from ntpupdater import NTPUpdater
 import queue
 import time
 import pandas as pd
