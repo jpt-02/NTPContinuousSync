@@ -5,6 +5,7 @@ Contains TimeAnchor and OffsetData classes
 # Imports
 
 import time
+import numpy as np
 
 # Classes
 
@@ -29,29 +30,34 @@ class TimeAnchor:
                     (see more in get_simultaneous_references)
         '''
         self.window = window
-        references = self._get_constrained_references()
-        self.time_ref = references[0] # time at initialization in nanoseconds
-        self.perf_ref = references[1] # perf counter reference in nanoseconds
+        self.time_ref, self.perf_ref = self._get_constrained_references() # time at initialization in nanoseconds, perf counter reference in nanoseconds
     
     def _get_constrained_references(self):
         '''
         Time reference and perf reference ideally are from the exact same nanosecond,
         but how close they are actually called to one another is up to the OS. This 
-        function loops until it gets two references within a certain time window.
-        On my machine, a window of 1000 ns has a roughly 90% success rate.
+        function loops repeatedly and takes the references from the smallest window.
+        On my machine, this is typically 100ns.
 
-        Returns: tuple (time_ref, perf_ref)
+        Returns: tuple of ints (time_ref, perf_ref)
         '''
-        while True:
-            p1, time_ref, p2 = self._get_simultaneous_references()
+        acquisition_list = []
+        for _ in range(10): # on my machine, range of 4 is sufficient to get it down to 100 ns
+            acquisition_list.append(self._get_simultaneous_references())
+        
+        data = np.array(acquisition_list)
+        deltas = data[:,2] - data[:,0] # p2-p1
 
-            if (p2-p1) < self.window:
-                #print('Success')
-                perf_ref = (p1+p2)//2
-                return (time_ref, perf_ref)
-            # TODO: implement max recursion limit before increasing window
-            #print('Failure')
-                
+        min_idx = np.argmin(deltas)
+        
+        #min_window = np.min(deltas) TODO: have this propagate through program to be stored for max error reference
+        #print(min_window)
+
+        time_ref = data[min_idx, 1]
+        perf_ref = (data[min_idx, 2] + data[min_idx, 0])//2
+
+        return time_ref, perf_ref
+
     def _get_simultaneous_references(self):
         '''
         Gets time references for use in _get_constrained_references. Made as a 
@@ -98,5 +104,5 @@ class OffsetAnchor(TimeAnchor):
 
 
 if __name__ == '__main__':
-    for i in range(10):
+    for i in range(1):
         anchor = TimeAnchor(1000)
