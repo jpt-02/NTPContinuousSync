@@ -14,7 +14,7 @@ Lots of comments because I'm new to C++
 extern std::atomic<uint64_t> current_ms; // makes compiler aware of variable from l1_clock.cpp
 
 // inform compiler that functions from l1_clock.cpp exist
-void start_clock(bool confine_to_core);
+void start_clock(bool confine_to_core, bool use_sleep);
 void stop_clock();
 
 #endif // closes ifndef from header guards, indicating end of header guard protection
