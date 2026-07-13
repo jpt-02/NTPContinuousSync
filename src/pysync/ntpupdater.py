@@ -20,17 +20,13 @@ class NTPUpdater:
     '''
     def __init__(self,
                  interval:int=300,
-                 window:int=10000,
                  tolerance:int=1000000):
         '''
         interval: time interval in seconds between each NTP sync
-        window: nanoseconds, acceptable window for references to be acquired
-            (see more in TimeAnchor class) TODO: implement and find optimal default value
         tolerance: allowable system clock drift across the duration of the function that 
             queries NTP serversf for best offset TODO: find optimal default value
         '''
         self.interval = interval
-        self.window = window
         self.tolerance = tolerance
         self._subscribers = [] # functions that are run every time there is a new offset
 
@@ -44,9 +40,9 @@ class NTPUpdater:
             @functools.wraps(func)
             async def async_wrapper(self, *args, **kwargs):
                 while True:
-                    anchor_1 = TimeAnchor(window = self.window)
+                    anchor_1 = TimeAnchor()
                     result = await func(self, *args, **kwargs)
-                    anchor_2 = TimeAnchor(window = self.window)
+                    anchor_2 = TimeAnchor()
                     if not anchor_1.has_drifted(anchor_2, self.tolerance):
                         return result
                     print(f'Drift out of tolerance, re-running function {func.__name__}.')
@@ -57,9 +53,9 @@ class NTPUpdater:
             @functools.wraps(func)
             def sync_wrapper(self, *args, **kwargs):
                 while True:
-                    anchor_1 = TimeAnchor(window = self.window)
+                    anchor_1 = TimeAnchor()
                     result = func(self, *args, **kwargs)
-                    anchor_2 = TimeAnchor(window = self.window)
+                    anchor_2 = TimeAnchor()
                     if not anchor_1.has_drifted(anchor_2, self.tolerance):
                         return result
                     print(f'Drift out of tolerance, re-running function {func.__name__}.')
@@ -124,7 +120,7 @@ class NTPUpdater:
         print(f"Best Source: {best_sample['server']} (Delay: {best_sample['delay']*1000:.2f}ms)")
 
         new_offset = best_sample['offset']
-        new_offset_anchor = OffsetAnchor(window=self.window, offset=new_offset)
+        new_offset_anchor = OffsetAnchor(offset=new_offset)
         return new_offset_anchor
     
     async def update_offset(self):

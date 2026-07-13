@@ -18,16 +18,14 @@ class TruthEndpoint:
     be run on a NTPUpdater object with a shorter interval than that 
     which it is being compared to.
     '''
-    def __init__(self, push:function, window:int=10000):
+    def __init__(self, push:function):
         '''
-        window: nanoseconds, acceptable window for references to be acquired
-            (see more in TimeAnchor class)
         push: function to be called upon NTP sync, intended to store 
             ground truth time and call now() from other endpoints to 
             compare
         '''
         self._lock = threading.Lock()
-        self.offset_anchor = OffsetAnchor(window=window, offset=0)
+        self.offset_anchor = OffsetAnchor(offset=0)
         self.push = push
 
     def callback(self, offset_anchor):
@@ -48,15 +46,9 @@ class SimpleEndpoint:
     An endpoint for corrected time that adds the latest offset to 
     whatever the current time is.
     '''
-    def __init__(self, window:int=10000):
-        '''
-        window: nanoseconds, acceptable window for references to be acquired
-            (see more in TimeAnchor class)
-        '''
-        self.window = window
+    def __init__(self):
         self._lock = threading.Lock()
-        self.offset_anchor = OffsetAnchor(window=window, offset=0)
-        # add easy setup parameter that automatically makes NTPUpdater object here
+        self.offset_anchor = OffsetAnchor(offset=0)
 
     def callback(self, offset_anchor):
         '''
@@ -80,11 +72,10 @@ class SimpleEndpoint:
     def easy_setup(self, interval:int=300):
         '''
         Creates an NTPUpdater and subscribes the endpoint to it
-        TODO: make this a option for initialization
 
         interval: seconds between each sync
         '''
-        updater = NTPUpdater(interval, window=self.window)
+        updater = NTPUpdater(interval)
         updater.subscribe(self.callback)
         updater.run_threaded()
 
@@ -100,14 +91,12 @@ class UseLastErrorEndpoint(SimpleEndpoint):
     Starts as SimpleEndpoint, but logs the error after each interval. Assumes subsequent 
     intervals will be off by this amount and adjust accordingly.
     '''
-    def __init__(self, interval:int, window:int=1000):
+    def __init__(self, interval:int):
         '''
         interval: time, in seconds, between each sync. Must be the same as whatever NTPUpdater
             the endpoint is subscribed to.
-        window: nanoseconds, acceptable window for references to be acquired
-            (see more in TimeAnchor class)
         '''
-        super().__init__(window=window)
+        super().__init__()
         self.interval = interval
         self.slew_coefficient = 1
         self.startup = True
@@ -151,14 +140,11 @@ class UseLastErrorEndpoint(SimpleEndpoint):
 
         interval: seconds between each sync
         '''
-        updater = NTPUpdater(interval=self.interval, window=self.window)
+        updater = NTPUpdater(interval=self.interval)
         updater.subscribe(self.callback)
         updater.run_threaded()
         
         
-
-    
-
 
 if __name__ == '__main__':
     

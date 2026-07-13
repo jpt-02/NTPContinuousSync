@@ -23,13 +23,10 @@ class TimeAnchor:
     3. Program calculates corrected time by adding offset to system time, but 
         because system time is now different, this gives an incorrect time.
     '''
-    def __init__(self, window:int):
+    def __init__(self):
         '''
         Initiates a TimeAnchor object
-        window: nanoseconds, acceptable window for references to be acquired
-                    (see more in get_simultaneous_references)
         '''
-        self.window = window
         self.time_ref, self.perf_ref = self._get_constrained_references() # time at initialization in nanoseconds, perf counter reference in nanoseconds
     
     def _get_constrained_references(self):
@@ -50,7 +47,7 @@ class TimeAnchor:
 
         min_idx = np.argmin(deltas)
         
-        #min_window = np.min(deltas) TODO: have this propagate through program to be stored for max error reference
+        #min_window = np.min(deltas) # TODO: have this propagate through program to be stored for max error reference
         #print(min_window)
 
         time_ref = data[min_idx, 1]
@@ -93,13 +90,12 @@ class OffsetAnchor(TimeAnchor):
     Stores TimeAnchor data along with its corresponding NTP offset
     MUST be initiated in a function decorated by verify_drift
     '''
-    def __init__(self, window:int, offset:float):
+    def __init__(self, offset:float):
         '''
         Initiates an OffsetAnchor object
-        window: nanoseconds, acceptable window for references to be acquired
         offset: NTP offset in seconds
         '''
-        super().__init__(window=window)
+        super().__init__()
         self.offset = offset
 
 
