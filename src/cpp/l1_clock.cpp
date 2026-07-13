@@ -70,8 +70,15 @@ void update_clock_loop(bool confine_to_core) {
 // Starts the thread
 void start_clock(bool confine_to_core, bool use_sleep) {
     /*
-    TODO: write description
+    Starts the clock in a thread.
+
+    confine_to_core: the thread resides on a single core
+    use_sleep: prevents 100% core utilization by sleeping, but requires OS to change 
+        refresh rate to 1ms.
+
+    TODO: figure out what happens if this is called multiple times without a stop
     */
+    clock_ready.store(false, std::memory_order_relaxed); // reset to not ready before starting clock again
     running.store(true, std::memory_order_relaxed); // set running variable to true
     if (use_sleep) {
         clock_thread = std::thread(update_clock_loop<true>, confine_to_core);
@@ -88,10 +95,17 @@ void start_clock(bool confine_to_core, bool use_sleep) {
 // Stops the thread
 void stop_clock() {
     /*
-    TODO: write description
+    Stops the thread
     */
     running.store(false, std::memory_order_relaxed);
     if (clock_thread.joinable()) {
         clock_thread.join();
     }
+}
+
+uint64_t get_current_ms() {
+    /*
+    Returns ms since clock was started
+    */
+    return current_ms.load(std::memory_order_relaxed);
 }
