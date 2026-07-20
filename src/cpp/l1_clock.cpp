@@ -28,7 +28,13 @@ static std::atomic<bool> clock_ready{false}; // makes thread wait until clock is
 template <bool UseSleep> // Create a template for UseSleep so there isnt a if statement in the main loop after compilation
 void update_clock_loop(bool confine_to_core) {
     /*
-    TODO: write description for this function
+    Uses cpp steady clock to update the current_ms variable once per millisecond. This allows less precise (ms vs ns) time, 
+    but faster acquisition because current_ms can be stored in the l1 cache. Not good for precise timing, great for rapidly 
+    timing network lag.
+    
+    confine_to_core: the thread resides on a single core
+    use_sleep (template): prevents 100% core utilization by sleeping, but requires OS to change 
+        refresh rate to 1ms.
     */
     
     // Template, change windows refresh rate to 1 ms

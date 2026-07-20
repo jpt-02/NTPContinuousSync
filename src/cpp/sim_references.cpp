@@ -16,7 +16,12 @@ namespace chrono = std::chrono; // shortens import for usage in code
 
 std::tuple<uint64_t, uint64_t, uint64_t> get_simultaneous_references() {
     /*
-    TODO: write docstring
+    Returns tup (p1, timeref, p2) of references. More precise, but slower.
+
+    p references are only compatible with cpp steady clock (now python perftimer which has an indeterminate starting point)
+
+    p1 and p2 are steady clock in ns. Technically 'since epoch', but since they aren't regularly synced its irrelevant.
+    timeref is system clock since epoch in ns
     */
     // Get raw time references
     auto p1_raw = chrono::steady_clock::now(); // fastest way to get MONOTONIC time point without going bare metal
@@ -43,8 +48,12 @@ std::tuple<uint64_t, uint64_t, uint64_t> get_simultaneous_references() {
 
 std::tuple<uint64_t, uint64_t, uint64_t> get_simultaneous_references_l1() {
     /*
-    TODO: write docstring
-    TODO: add this to header
+    Returns tup (p1, timeref, p2) of references, using the custom l1 clock. Less precise, but faster.
+
+    p references are only compatible with readings from l1 clock (not python perftimer or cpp steady clock)
+
+    p1 and p2 are l1 (steady) clock in ms, since clock start.
+    timeref is system clock since epoch in ns
     */
     // Get raw time references
     auto p1 = get_current_ms();
