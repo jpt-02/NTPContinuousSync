@@ -24,7 +24,7 @@ class NTPUpdater:
         '''
         interval: time interval in seconds between each NTP sync
         tolerance: allowable system clock drift across the duration of the function that 
-            queries NTP serversf for best offset TODO: find optimal default value
+            queries NTP servers for best offset # TODO: find optimal default value
         '''
         self.interval = interval
         self.tolerance = tolerance
