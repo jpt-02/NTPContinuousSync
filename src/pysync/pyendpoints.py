@@ -4,7 +4,7 @@ Contains python endpoints for more precise times.
 
 # Imports
 
-from timeanchor import OffsetAnchor
+from anchors import OffsetAnchor
 from ntpupdater import NTPUpdater
 import time
 import threading

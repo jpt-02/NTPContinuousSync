@@ -62,6 +62,8 @@ void update_clock_loop(bool confine_to_core) {
         auto duration = chrono::duration_cast<chrono::milliseconds>(now - start_time); // calculates duration, uses type cast to make into ms
         current_ms.store(duration.count(), std::memory_order_relaxed); // uses .count to turn C++ time point into regular integer, stores in current_ms variable with thread safety
 
+        // TODO: add function call capability here so different now() functions can be called. Probably use a template.
+
         if constexpr (UseSleep) {
             std::this_thread::sleep_for(chrono::milliseconds(1)); // sleep for 1 ms so CPU core utilization isnt at 100% due to contant while looping
         }

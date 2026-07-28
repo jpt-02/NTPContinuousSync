@@ -8,7 +8,7 @@ import ntplib
 import asyncio
 import threading
 import inspect
-from timeanchor import TimeAnchor, OffsetAnchor
+from anchors import TimeAnchor, OffsetAnchor
 import functools
 import time
 
@@ -20,11 +20,16 @@ class NTPUpdater:
     '''
     def __init__(self,
                  interval:int=300,
-                 tolerance:int=1000000):
+                 tolerance:int=1000000,
+                 optimization_flag:int=0):
         '''
         interval: time interval in seconds between each NTP sync
         tolerance: allowable system clock drift across the duration of the function that 
             queries NTP servers for best offset # TODO: find optimal default value
+        optimization_flag: # TODO: propagate this through the offset anchors
+            0 - No optimizations, pure python
+            1 - Python logic rewritten in cpp
+            2 - Uses cpp l1 clock with +/-1ms accuracy
         '''
         self.interval = interval
         self.tolerance = tolerance
@@ -66,6 +71,8 @@ class NTPUpdater:
         '''
         callback: function to be called every time there is a new offset
         '''
+        # TODO: maybe make the first offset anchor containing zero come from this, that way the offset anchors
+        # themselves dont have to make their own anchor during init and it cleans up the logic.
         if callback not in self._subscribers:
             self._subscribers.append(callback)
 
