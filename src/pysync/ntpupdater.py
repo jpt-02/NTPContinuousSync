@@ -33,7 +33,9 @@ class NTPUpdater:
         '''
         self.interval = interval
         self.tolerance = tolerance
-        self._subscribers = [] # functions that are run every time there is a new offset
+        self._subscribers = [] # functions that are run every time there is a new offset # TODO: remove eventually
+        self._linked_endpoints = [] # linked endpoints that are updated every time there is a new offset
+        self._loop = None # the active event loop for getting an update each interval
 
     @staticmethod
     def verify_drift(func):
@@ -67,12 +69,28 @@ class NTPUpdater:
                     time.sleep(0.1)
             return sync_wrapper
     
+    def link_endpoint(self,endpoint):
+        '''
+        Links the NTPUpdater to an endpoint. When there is a new offset from the NTPUpdater, 
+        the link allows a callback in the endpoint to be called, updating the info.
+        Also shares other info, like interval.
+
+        Endpoint: any python object with:
+            function 'callback' with args 'offset_anchor', for recieving the updated offset
+            function 'link_to_updater' with args 'updater', for recieiving info about the updater
+        '''
+        # TODO: force updates for all subscribers
+        if endpoint not in self._linked_endpoints:
+            self._linked_endpoints.append(endpoint)
+            endpoint.link_to_updater(self)
+
     def subscribe(self,callback:function):
         '''
         callback: function to be called every time there is a new offset
         '''
         # TODO: maybe make the first offset anchor containing zero come from this, that way the offset anchors
         # themselves dont have to make their own anchor during init and it cleans up the logic.
+        # TODO: replace with link_endpoint
         if callback not in self._subscribers:
             self._subscribers.append(callback)
 
@@ -151,9 +169,28 @@ class NTPUpdater:
         '''
         Starts the loop to update offset once every interval
         '''
+        self._loop = asyncio.get_running_loop()
         while True:
             await self.update_offset()
             await asyncio.sleep(self.interval)
+
+    def force_update(self):
+        '''
+        Forces the NTPUpdater to get a new offset, regardless of where it is
+        in the interval.
+
+        returns Future
+            if function call is followed by future.result(), this blocks until 
+            the update finishes. Completely optional.
+        '''
+        if self._loop is None or not self._loop.is_running():
+            print('NTPUpdater not currently running, force update not possible')
+            return None
+        
+        future = asyncio.run_coroutine_threadsafe(
+            self.update_offset(), self._loop
+        )
+        return future
 
     def run_async(self):
         '''
