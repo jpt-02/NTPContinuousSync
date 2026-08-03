@@ -33,8 +33,9 @@ class NTPUpdater:
         '''
         self.interval = interval
         self.tolerance = tolerance
-        self._subscribers = [] # functions that are run every time there is a new offset # TODO: remove eventually
+        self.optimization_flag = optimization_flag # TODO: propagate this to anchors
         self._linked_endpoints = [] # linked endpoints that are updated every time there is a new offset
+        self._linked_endpoint_callbacks = [] # functions that are run every time there is a new offset
         self._loop = None # the active event loop for getting an update each interval
 
     @staticmethod
@@ -75,24 +76,20 @@ class NTPUpdater:
         the link allows a callback in the endpoint to be called, updating the info.
         Also shares other info, like interval.
 
-        Endpoint: any python object with:
-            function 'callback' with args 'offset_anchor', for recieving the updated offset
-            function 'link_to_updater' with args 'updater', for recieiving info about the updater
+        Endpoint: any public class in the pyendpoints.py file # TODO: change file name if necessary
         '''
         # TODO: force updates for all subscribers
         if endpoint not in self._linked_endpoints:
-            self._linked_endpoints.append(endpoint)
+            self._linked_endpoints.append(endpoint) # store pointer to endpoint class
             endpoint.link_to_updater(self)
 
-    def subscribe(self,callback:function):
+    def subscribe(self,callback):
         '''
         callback: function to be called every time there is a new offset
         '''
-        # TODO: maybe make the first offset anchor containing zero come from this, that way the offset anchors
-        # themselves dont have to make their own anchor during init and it cleans up the logic.
         # TODO: replace with link_endpoint
-        if callback not in self._subscribers:
-            self._subscribers.append(callback)
+        if callback not in self._linked_endpoint_callbacks:
+            self._linked_endpoint_callbacks.append(callback)
 
     async def _query_server(self, server:str, client):
         '''
@@ -155,7 +152,8 @@ class NTPUpdater:
         new_offset_anchor = await self.get_best_offset()
         if new_offset_anchor is not None:
             print(f'New Offset is {new_offset_anchor.offset}')
-            for callback in self._subscribers:
+            for endpoint in self._linked_endpoints:
+                callback = endpoint.callback # TODO: this should work but test it out 
                 try:
                     # callback can be async or regular
                     if inspect.iscoroutinefunction(callback):

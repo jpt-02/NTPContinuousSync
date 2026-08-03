@@ -127,7 +127,7 @@ class TimeAnchor:
 
         return p1, time_ref, p2
 
-    def has_drifted(self, other_anchor:TimeAnchor, tolerance:int):
+    def has_drifted(self, other_anchor, tolerance:int):
         '''
         Determines if system time has drifted for any reason between two anchors
         other_anchor: TimeAnchor object to be compared to
