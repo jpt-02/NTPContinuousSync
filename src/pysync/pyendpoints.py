@@ -168,6 +168,8 @@ class Endpoint:
         self.offset_anchor = None # inherited after first sucessful sync
         self.interval = None # inherited from NTPUpdater after linking
 
+        # TODO: make a function called 'expose' that exposes certain variables to c++, some continuously, based on type and opt flag.
+
     def link_to_updater(self, updater:NTPUpdater):
         '''
         Links the endpoint to an NTPUpdater. Not strictly necessary, but allows the endpoint 
@@ -211,6 +213,7 @@ class Endpoint:
                 self.now = lambda: new_now(self)
                 if new_secondary_callback: # some optimizations dont use this so its just None
                     self.secondary_callback = lambda: new_secondary_callback(self)
+                    self.secondary_callback() # run for first time to populate necessary variables
 
     def easy_setup(self, interval:int=300):
         '''
