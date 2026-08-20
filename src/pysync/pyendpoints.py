@@ -37,8 +37,8 @@ class TruthEndpoint:
         with self._lock:
             self.offset_anchor = offset_anchor
 
-        perf_delta = time.perf_counter_ns() - offset_anchor.perf_ref
-        true_time = (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
+        perf_delta = time.perf_counter_ns()*1e-9 - offset_anchor.perf_ref
+        true_time = offset_anchor.time_ref + perf_delta + offset_anchor.offset
         self.push(true_time)
 
 
@@ -46,7 +46,7 @@ class _NowEngine:
     '''
     Defines now() for each endpoint and each optimization
     '''
-    def get_specialized_functions(self, type:str, optimization_flag:int):
+    def get_new_now(self, type:str, optimization_flag:int):
         '''
         type:
             simple - Adds latest offset to current time
@@ -58,12 +58,12 @@ class _NowEngine:
             1 - C++ implementation, but otherwise same as python
             2 - C++ implementation, auto-calculates time once every 1 ms and stores it in l1 cache
 
-        Returns (new function for now(), new function for secondary_callback())
+        Returns new function for now()
         '''
         dispatch_table = {
-            ('simple',0) : (self._simple_opt0, None),
-            ('unadjusted',0) : (self._unadjusted_opt0, None),
-            ('lasterror',0) : (self._lasterror_opt0, None)
+            ('simple',0) : self._simple_opt0,
+            ('unadjusted',0) : self._unadjusted_opt0,
+            ('lasterror',0) : self._lasterror_opt0
             # TODO: fill this out as optimizations are made
         }
 
@@ -78,8 +78,8 @@ class _NowEngine:
         with endpoint._lock:
             offset_anchor = endpoint.offset_anchor
         # use local copy to do math
-        perf_delta = time.perf_counter_ns() - offset_anchor.perf_ref
-        return (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
+        perf_delta = time.perf_counter_ns()*1e-9 - offset_anchor.perf_ref
+        return offset_anchor.time_ref + perf_delta + offset_anchor.offset
 
     @staticmethod
     def _unadjusted_opt0(endpoint):
@@ -94,15 +94,7 @@ class _NowEngine:
         pass
 
     @staticmethod
-    def _simple_opt1_callback(endpoint):
-        pass
-
-    @staticmethod
     def _unadjusted_otp1(endpoint):
-        pass
-
-    @staticmethod
-    def _unadjusted_opt1_callback(endpoint):
         pass
 
     @staticmethod
@@ -110,15 +102,7 @@ class _NowEngine:
         pass
 
     @staticmethod
-    def _lasterror_opt1_callback(endpoint):
-        pass
-
-    @staticmethod
     def _simple_otp2(endpoint):
-        pass
-
-    @staticmethod
-    def _simple_opt2_callback(endpoint):
         pass
 
     @staticmethod
@@ -126,43 +110,24 @@ class _NowEngine:
         pass
 
     @staticmethod
-    def _unadjusted_opt2_callback(endpoint):
-        pass
-
-    @staticmethod
     def _lasterror_otp2(endpoint):
         pass
-
-    @staticmethod
-    def _lasterror_opt2_callback(endpoint):
-        pass
-
-    
-
-
-
 
 
 
 class Endpoint:
-    def __init__(self, type, optimization_flag:int=0):
+    def __init__(self, type):
         '''
         type:
             simple - Adds latest offset to current time
             unadjusted - Uses unadjusted system time (for reference)
             lasterror - SimpleEndpoint, but remembers the error at the end of each interval and assumes
                         subsequent intervals will be off by the same error. Adjusts to compensate.
-        optimization_flag:
-            0 - pure python implementation
-            1 - C++ implementation, but otherwise same as python
-            2 - C++ implementation, auto-calculates time once every 1 ms and stores it in l1 cache
         '''
         self._type = type
-        self._optimization_flag = optimization_flag
         self._lock = threading.Lock()
         self._now_engine = _NowEngine()
         self.now = self._now_startup # returns unadjusted system time, prevents crash before first sync
-        self.secondary_callback = self._secondary_callback_startup
 
         # placeholders for calculations - not strictly necessary
         self.offset_anchor = None # inherited after first sucessful sync
@@ -178,7 +143,8 @@ class Endpoint:
         with self._lock:
             self.interval = updater.interval
             self._optimization_flag = updater.optimization_flag
-            future = updater.force_update() # force the NTPUpdater to give a time anchor
+            # TODO: this is a good place to expose some variables
+            future = updater.force_update() # force the NTPUpdater to give a time anchor # TODO: make sure this doesnt break lasterror endpoint
             if future is not None: # this happens if the NTPUpdater isnt running
                 future.result() # block until the anchor is recieved (not strictly necessary)         
     
@@ -189,10 +155,11 @@ class Endpoint:
         print('Warning: No offset used.') # TODO: make this more detailed
         return time.time_ns()*(1e-9)
     
-    def _secondary_callback_startup(self):
+    def _expose(self):
         '''
         Placeholder for before the link to updater
         '''
+        # TODO: delete this, probably isnt necessary
         pass
     
     def callback(self, offset_anchor):
@@ -202,18 +169,13 @@ class Endpoint:
         '''
         with self._lock:
             self.offset_anchor = offset_anchor
-            self.secondary_callback() # used for c++ optimizations, does nothing otherwise
-            # TODO: make sure args work above
             
             # switch out now functions here because its possible for the connection to fail and an anchor
             # not be recieved after the link forces an update
             if self.now == self._now_startup:
-                new_now, new_secondary_callback = self._now_engine.get_specialized_functions(self._type, self._optimization_flag)
+                new_now = self._now_engine.get_new_now(self._type, self._optimization_flag)
                 # bind it to this instance so endpoint.now() calls it directly without dispatch overhead
                 self.now = lambda: new_now(self)
-                if new_secondary_callback: # some optimizations dont use this so its just None
-                    self.secondary_callback = lambda: new_secondary_callback(self)
-                    self.secondary_callback() # run for first time to populate necessary variables
 
     def easy_setup(self, interval:int=300):
         '''
@@ -226,6 +188,8 @@ class Endpoint:
         updater.run_threaded()
 
 
+
+# OLD CLASSES
 
 class SimpleEndpoint:
     '''

@@ -3,7 +3,7 @@
 #include <thread>
 #include <chrono>
 #include "l1_clock.hpp" // Pulls in the extern for current_ms
-#include "sim_references.hpp" 
+//#include "sim_references.hpp" 
 
 int main() {
     
@@ -32,52 +32,52 @@ int main() {
     
     // TESTS FOR SIM REFERENCES (AI SLOP)
 
-    // // A vector to store the 10 tuples
-    // std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> history;
-    // history.reserve(10); // Reserves memory so the loop stays fast
-
-    // for (int i=0; i<10; i++) {
-    //     auto result = get_simultaneous_references();
-
-    //     history.push_back(result);
-    // }
-
-    // // 2. Math & Printing loop: Done entirely after the time-critical part is finished
-    // std::cout << "--- Results ---\n";
-    // for (int i = 0; i < 10; i++) {
-    //     // Unpack the stored tuple using structured binding
-    //     auto [p1, timeref, p2] = history[i];
-        
-    //     std::cout << "Sample " << i + 1 << " - Time elapsed: " << (p2 - p1) << " ns\n";
-    // }
-
-
-
-
-    start_clock(true, true);
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-
     // A vector to store the 10 tuples
-    std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> history;
-    history.reserve(10); // Reserves memory so the loop stays fast
+//     std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> history;
+//     history.reserve(10); // Reserves memory so the loop stays fast
 
-    for (int i=0; i<10; i++) {
-        auto result = get_simultaneous_references_l1();
+//     for (int i=0; i<10; i++) {
+//         auto result = get_simultaneous_references();
 
-        history.push_back(result);
-    }
+//         history.push_back(result);
+//     }
 
-    // 2. Math & Printing loop: Done entirely after the time-critical part is finished
-    std::cout << "--- Results ---\n";
-    for (int i = 0; i < 10; i++) {
-        // Unpack the stored tuple using structured binding
-        auto [p1, timeref, p2] = history[i];
+//     // 2. Math & Printing loop: Done entirely after the time-critical part is finished
+//     std::cout << "--- Results ---\n";
+//     for (int i = 0; i < 10; i++) {
+//         // Unpack the stored tuple using structured binding
+//         auto [p1, timeref, p2] = history[i];
         
-        std::cout << "Sample " << i + 1 << " - Time elapsed: " << (p2 - p1) << " ms\n";
-        std::cout << "Current ms count: " << (p2+p1)/2;
-    }
+//         std::cout << "Sample " << i + 1 << " - Time elapsed: " << (p2 - p1) << " ns\n";
+//     }
 
-    stop_clock();
 
-    return 0;
-}
+
+
+//     start_clock(true, true);
+//     std::this_thread::sleep_for(std::chrono::seconds(2));
+
+//     // A vector to store the 10 tuples
+//     std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> history;
+//     history.reserve(10); // Reserves memory so the loop stays fast
+
+//     for (int i=0; i<10; i++) {
+//         auto result = get_simultaneous_references_l1();
+
+//         history.push_back(result);
+//     }
+
+//     // 2. Math & Printing loop: Done entirely after the time-critical part is finished
+//     std::cout << "--- Results ---\n";
+//     for (int i = 0; i < 10; i++) {
+//         // Unpack the stored tuple using structured binding
+//         auto [p1, timeref, p2] = history[i];
+        
+//         std::cout << "Sample " << i + 1 << " - Time elapsed: " << (p2 - p1) << " ms\n";
+//         std::cout << "Current ms count: " << (p2+p1)/2;
+//     }
+
+//     stop_clock();
+
+//     return 0;
+// }

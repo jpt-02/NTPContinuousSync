@@ -59,7 +59,6 @@ class _ReferenceEngine:
         # TODO: get from pybind
         pass
 
-
 class TimeAnchor:
     '''
     Stores a time (system clock) and perftime (monotonic clock) reference.
@@ -78,12 +77,11 @@ class TimeAnchor:
         '''
         Initiates a TimeAnchor object
 
-        optimization_flag: changes behavior of _get_simultaneous_references
-            0 - No optimizations, pure python
-            1 - Python logic rewritten in cpp
-            2 - Uses cpp l1 clock with +/-1ms accuracy
+        optimization_flag:
+            0 - pure python implementation
+            1 - C++ implementation, but otherwise same as python
+            2 - C++ implementation, auto-calculates time once every 1 ms and stores it in l1 cache
         '''
-        self._reference_engine = _ReferenceEngine(optimization_flag)
         self.time_ref, self.perf_ref = self._get_constrained_references() # time at initialization in nanoseconds, perf counter reference in nanoseconds
     
     def _get_constrained_references(self):
@@ -93,7 +91,7 @@ class TimeAnchor:
         function loops repeatedly and takes the references from the smallest window.
         On my machine, this is typically 100ns.
 
-        Returns: tuple of ints (time_ref, perf_ref)
+        Returns: time_ref (integer, seconds), perf_ref (integer, seconds)
         '''
         acquisition_list = []
         for _ in range(10): # on my machine, range of 4 is sufficient to get it down to 100 ns
@@ -110,7 +108,7 @@ class TimeAnchor:
         time_ref = data[min_idx, 1]
         perf_ref = (data[min_idx, 2] + data[min_idx, 0])//2
 
-        return time_ref, perf_ref
+        return time_ref*1e-9, perf_ref*1e-9
 
     def _get_simultaneous_references(self):
         '''
@@ -125,7 +123,7 @@ class TimeAnchor:
         time_ref = time.time_ns()
         p2 = time.perf_counter_ns()
 
-        return p1, time_ref, p2
+        return p1,time_ref, p2
 
     def has_drifted(self, other_anchor, tolerance:int):
         '''
@@ -138,8 +136,8 @@ class TimeAnchor:
         if not isinstance(other_anchor, TimeAnchor):
             raise TypeError('Can only compare drift between two TimeAnchor objects')
         
-        time_ref_delta = abs(self.time_ref - other_anchor.time_ref)
-        perf_ref_delta = abs(self.perf_ref - other_anchor.perf_ref)
+        time_ref_delta = abs(self.time_ref*1e9 - other_anchor.time_ref*1e9)
+        perf_ref_delta = abs(self.perf_ref*1e9 - other_anchor.perf_ref*1e9)
 
         return abs(time_ref_delta-perf_ref_delta) > tolerance
 

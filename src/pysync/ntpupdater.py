@@ -26,10 +26,13 @@ class NTPUpdater:
         interval: time interval in seconds between each NTP sync
         tolerance: allowable system clock drift across the duration of the function that 
             queries NTP servers for best offset # TODO: find optimal default value
-        optimization_flag: # TODO: propagate this through the offset anchors
-            0 - No optimizations, pure python
-            1 - Python logic rewritten in cpp
-            2 - Uses cpp l1 clock with +/-1ms accuracy
+        optimization_flag:
+            0 - pure python implementation
+            1 - C++ implementation, but otherwise same as python
+            2 - C++ implementation, auto-calculates time once every 1 ms and stores it in l1 cache
+        # TODO: if opt flag is 2, start the cpp clock.
+        # TODO: possibly add option to have offset anchor pre-converted to ms, us, or ns
+        # TODO: make it so that if opt2, can only use subscribe before running. Maybe make it so its always like this.
         '''
         self.interval = interval
         self.tolerance = tolerance
