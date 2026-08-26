@@ -41,6 +41,9 @@ class NTPUpdater:
         self._linked_endpoint_callbacks = [] # functions that are run every time there is a new offset
         self._loop = None # the active event loop for getting an update each interval
 
+        if self.optimization_flag == 2:
+            pass # TODO: call cpp to start l1 clock
+
     @staticmethod
     def verify_drift(func):
         '''
@@ -81,7 +84,7 @@ class NTPUpdater:
 
         Endpoint: any public class in the pyendpoints.py file # TODO: change file name if necessary
         '''
-        # TODO: force updates for all subscribers
+        # TODO: remove force update and make it so that this can only be called before the worker starts
         if endpoint not in self._linked_endpoints:
             self._linked_endpoints.append(endpoint) # store pointer to endpoint class
             endpoint.link_to_updater(self)
@@ -145,7 +148,7 @@ class NTPUpdater:
         print(f"Best Source: {best_sample['server']} (Delay: {best_sample['delay']*1000:.2f}ms)")
 
         new_offset = best_sample['offset']
-        new_offset_anchor = OffsetAnchor(offset=new_offset)
+        new_offset_anchor = OffsetAnchor(offset=new_offset) # TODO: change behavior based on opt flag
         return new_offset_anchor
     
     async def update_offset(self):
@@ -173,6 +176,7 @@ class NTPUpdater:
         self._loop = asyncio.get_running_loop()
         while True:
             await self.update_offset()
+            # TODO: make a threadsafe (async safe?) flag to indicate that we are now running. Make link_endpoint check this flag.
             await asyncio.sleep(self.interval)
 
     def force_update(self):

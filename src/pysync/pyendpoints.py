@@ -114,7 +114,6 @@ class _NowEngine:
         pass
 
 
-
 class Endpoint:
     def __init__(self, type):
         '''

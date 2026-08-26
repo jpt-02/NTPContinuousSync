@@ -1,11 +1,16 @@
 /*
 Implementation file for sim_references
-Lots of comments because I'm new to C++
+
+The purpose of this file is to ensure that time references (one for monotonic clock and one for system clock) are 
+acquired as close to one another as possible. To make this happen, one system time reference is taken between two 
+monotonic references, and this is looped 10 times to get the smallest possible window where all 3 are acquired. The 
+two monotonic references are then averaged, meaning our maximum possible error as a result of reference acquisitions 
+is the size of the window. References using chrono are taken in raw form before being parsed to make the loop as quick 
+as possible.
 */
 
 // imports
 #include "offset_anchor.hpp"
-// #include <tuple> // imports tuple, which is the return value of sim reference functions
 #include <cstdint> // gives us uint64_t, which is always 64 bits and can safely store large ms values
 #include <chrono> // system clocks
 #include "l1_clock.hpp" // custom ms-accurate clock thats faster than system calls
@@ -43,7 +48,9 @@ struct ConstrainedReferences {
 
 RawReferences_opt1 get_raw_references_opt1() {
     /*
-    TODO: write docstring
+    Gets raw clock references for opt1.
+
+    Returns: {monotonic clock time point, system clock time point, monotonic clock time point}
     */
     auto p1_raw = chrono::steady_clock::now();
     auto timeref_raw = chrono::system_clock::now();
@@ -53,7 +60,9 @@ RawReferences_opt1 get_raw_references_opt1() {
 
 RawReferences_opt2 get_raw_references_opt2() {
     /*
-    TODO: write docstring
+    Gets raw clock references for opt2.
+
+    Returns: {int: l1_clock time in ms, system clock time point, int: l1_clock time in ms}
     */
     auto p1 = get_current_ms();
     auto timeref_raw = chrono::system_clock::now();
@@ -61,10 +70,11 @@ RawReferences_opt2 get_raw_references_opt2() {
     return {p1, timeref_raw, p2};
 }
 
-// function to convert raw references to usable numbers
 ParsedReferences process_references_opt1(const RawReferences_opt1& raw) { // & means pass as reference instead of copying
     /*
-    TODO: write docstring
+    Gets parsed references for opt1.
+
+    Returns: {int: monotonic time in ns, int: system time in ns, int: monotonic time in ns}
     */
     const auto & [p1_raw, timeref_raw, p2_raw] = raw;
 
@@ -85,7 +95,9 @@ ParsedReferences process_references_opt1(const RawReferences_opt1& raw) { // & m
 
 ParsedReferences process_references_opt2(const RawReferences_opt2& raw) {
     /*
-    TODO: write docstring
+    Gets raw clock references for opt2.
+
+    Returns: {int: l1_clock time in ms, int: system time in ms, int: l1_clock time in ms}
     */
     const auto & [p1, timeref_raw, p2] = raw;
 
@@ -99,7 +111,10 @@ ParsedReferences process_references_opt2(const RawReferences_opt2& raw) {
 
 ConstrainedReferences get_constrained_references_opt1() {
     /*
-    TODO: write docstring
+    Loops through 10 pairs of raw references, parses them, and returns the pair of parsed 
+    references with the smallest time window between p1 and p2. 
+
+    Returns: {int: system time in ns, int: monotonic time in ns}
     */
     
     // quickly get all raw references
@@ -136,7 +151,10 @@ ConstrainedReferences get_constrained_references_opt1() {
 
 ConstrainedReferences get_constrained_references_opt2() {
     /*
-    TODO: write docstring
+    Loops through 10 pairs of raw references, parses them, and returns the pair of parsed 
+    references with the smallest time window between p1 and p2. 
+
+    Returns: {int: system time in ms, int: l1_clock time in ms}
     */
     
     // quickly get all raw references
@@ -173,7 +191,9 @@ ConstrainedReferences get_constrained_references_opt2() {
 
 OffsetAnchor create_offset_anchor(int optimization_flag, double offset) {
     /*
-    TODO: write docstring
+    Creates an offset anchor with an offset, time_ref, and perf_ref
+
+    Returns: {double: offset anchor in s, double: time_ref in s, double: perf_ref in s}
     */
     OffsetAnchor return_anchor{};
     return_anchor.offset = offset; // in future, maybe round this for opt2 to save memory?

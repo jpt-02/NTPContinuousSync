@@ -100,7 +100,6 @@ void start_clock(bool confine_to_core, bool use_sleep) {
 
 }
 
-// Stops the thread
 void stop_clock() {
     /*
     Stops the thread

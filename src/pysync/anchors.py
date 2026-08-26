@@ -9,56 +9,6 @@ import numpy as np
 
 # Classes
 
-class _ReferenceEngine:
-    '''
-    Contains the time reference functions for each optimization level
-    '''
-    def __init__(self, optimization_flag:int):
-        '''
-        optimization_flag:
-            0 - No optimizations, pure python
-            1 - Python logic rewritten in cpp
-            2 - Uses cpp l1 clock with +/-1ms accuracy
-        '''
-        self.optimization_flag = optimization_flag
-
-    def get_reference_function(self):
-        '''
-        Returns the reference function indicated by the optimization flag
-        '''
-        if self.optimization_flag == 0:
-            return 0 # TODO: fix this
-        elif self.optimization_flag == 1:
-            return 0
-        elif self.optimization_flag == 2:
-            return 0
-        
-    def _ref0(self):
-        '''
-        Simultaneous reference function for optimization 0
-
-        Returns: p1 (perf counter in ns), time_ref (current system time in ns), p2 (perf counter in ns)
-        '''
-        p1 = time.perf_counter_ns()
-        time_ref = time.time_ns()
-        p2 = time.perf_counter_ns()
-
-        return p1, time_ref, p2
-
-    def _ref1(self):
-        '''
-        Simultaneous reference function for optimization 1
-        '''
-        # TODO: get from pybind
-        pass
-
-    def _ref2(self):
-        '''
-        Simultaneous reference function for optimization 2
-        '''
-        # TODO: get from pybind
-        pass
-
 class TimeAnchor:
     '''
     Stores a time (system clock) and perftime (monotonic clock) reference.
@@ -73,7 +23,7 @@ class TimeAnchor:
     3. Program calculates corrected time by adding offset to system time, but 
         because system time is now different, this gives an incorrect time.
     '''
-    def __init__(self, optimization_flag:int=0):
+    def __init__(self):
         '''
         Initiates a TimeAnchor object
 
@@ -146,13 +96,20 @@ class OffsetAnchor(TimeAnchor):
     Stores TimeAnchor data along with its corresponding NTP offset
     MUST be initiated in a function decorated by verify_drift
     '''
-    def __init__(self, offset:float):
+    def __init__(self, offset:float, optimization_flag:int=0):
         '''
         Initiates an OffsetAnchor object
         offset: NTP offset in seconds
         '''
-        super().__init__()
-        self.offset = offset
+        if optimization_flag == 0: # TODO: its possible this if statement isnt necessary and this can be handled by the updater
+            super().__init__()
+            self.offset = offset
+        elif optimization_flag == 1:
+            pass # TODO: init cpp version
+        elif optimization_flag == 2:
+            pass # TODO: init cpp version
+        else:
+            pass # TODO: raise exception
 
 
 if __name__ == '__main__':
