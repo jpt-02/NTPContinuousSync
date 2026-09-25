@@ -8,7 +8,7 @@ import ntplib
 import asyncio
 import threading
 import inspect
-from anchors import TimeAnchor, OffsetAnchor
+from pysync.anchors import TimeAnchor, OffsetAnchor
 import functools
 import time
 
@@ -121,6 +121,7 @@ class NTPUpdater:
 
         Returns OffsetAnchor object, with attribute offset (seconds) to 
         be added to current time.
+        Returns None if all connections fail.
         '''
         servers = [
             "time.google.com", 
@@ -154,20 +155,25 @@ class NTPUpdater:
     async def update_offset(self):
         '''
         Updates the offset and initates subscribed callbacks
+        Callbacks are called with None as argument if NTP sync fails. Endpoints handle this.
         '''
         new_offset_anchor = await self.get_best_offset()
+
         if new_offset_anchor is not None:
             print(f'New Offset is {new_offset_anchor.offset}')
-            for endpoint in self._linked_endpoints:
-                callback = endpoint.callback # TODO: this should work but test it out 
-                try:
-                    # callback can be async or regular
-                    if inspect.iscoroutinefunction(callback):
-                        await callback(new_offset_anchor) # TODO: add support for more args I think
-                    else:
-                        callback(new_offset_anchor)
-                except Exception as e:
-                    print(f'Callback Error: {e}')
+        else:
+            print('NTP Sync Failed, callbacks called with None')
+
+        for endpoint in self._linked_endpoints:
+            callback = endpoint.callback # TODO: this should work but test it out 
+            try:
+                # callback can be async or regular
+                if inspect.iscoroutinefunction(callback):
+                    await callback(new_offset_anchor) # TODO: add support for more args I think
+                else:
+                    callback(new_offset_anchor)
+            except Exception as e:
+                print(f'Callback Error: {e}')
 
     async def _worker(self):
         '''

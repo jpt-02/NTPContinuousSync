@@ -194,6 +194,7 @@ OffsetAnchor create_offset_anchor(int optimization_flag, double offset) {
     Creates an offset anchor with an offset, time_ref, and perf_ref
 
     Returns: {double: offset anchor in s, double: time_ref in s, double: perf_ref in s}
+    # TODO: to make this consistent with the python version just keep these in ns
     */
     OffsetAnchor return_anchor{};
     return_anchor.offset = offset; // in future, maybe round this for opt2 to save memory?

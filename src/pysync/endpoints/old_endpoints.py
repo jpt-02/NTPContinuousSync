@@ -4,8 +4,8 @@ Contains python endpoints for more precise times.
 
 # Imports
 
-from anchors import OffsetAnchor
-from ntpupdater import NTPUpdater
+from pysync.anchors import OffsetAnchor
+from pysync.ntpupdater import NTPUpdater
 import time
 import threading
 
@@ -41,6 +41,12 @@ class TruthEndpoint:
         true_time = offset_anchor.time_ref + perf_delta + offset_anchor.offset
         self.push(true_time)
 
+    def link_to_updater(self, updater:NTPUpdater):
+        '''
+        Links the endpoint to an NTPUpdater. Does nothing here, just stops the error.
+        '''
+        pass
+
 
 class _NowEngine:
     '''
@@ -59,6 +65,7 @@ class _NowEngine:
             2 - C++ implementation, auto-calculates time once every 1 ms and stores it in l1 cache
 
         Returns new function for now()
+        # TODO: make it clear somewhere that the units for return values are seconds since epoch
         '''
         dispatch_table = {
             ('simple',0) : self._simple_opt0,
@@ -83,39 +90,39 @@ class _NowEngine:
 
     @staticmethod
     def _unadjusted_opt0(endpoint):
-        pass
+        return time.time()
 
     @staticmethod
     def _lasterror_opt0(endpoint):
         pass
 
     @staticmethod
-    def _simple_otp1(endpoint):
+    def _simple_opt1(endpoint):
         pass
 
     @staticmethod
-    def _unadjusted_otp1(endpoint):
+    def _unadjusted_opt1(endpoint):
         pass
 
     @staticmethod
-    def _lasterror_otp1(endpoint):
+    def _lasterror_opt1(endpoint):
         pass
 
     @staticmethod
-    def _simple_otp2(endpoint):
+    def _simple_opt2(endpoint):
         pass
 
     @staticmethod
-    def _unadjusted_otp2(endpoint):
+    def _unadjusted_opt2(endpoint):
         pass
 
     @staticmethod
-    def _lasterror_otp2(endpoint):
+    def _lasterror_opt2(endpoint):
         pass
 
 
 class Endpoint:
-    def __init__(self, type):
+    def __init__(self, type:str='lasterror'):
         '''
         type:
             simple - Adds latest offset to current time
@@ -303,7 +310,7 @@ if __name__ == '__main__':
     # updater.run_threaded()
     # #endpoint.easy_setup(interval=5)
 
-    endpoint = Endpoint('simple',0)
+    endpoint = Endpoint('simple')
     endpoint.easy_setup(interval=5) # TODO: see if this works
     # TODO: test subscribing after the NTPupdater is running to make sure force update works
 

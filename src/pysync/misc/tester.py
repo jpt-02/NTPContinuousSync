@@ -4,29 +4,28 @@ Used for testing the accuracy of endpoints and saving/plotting data
 
 # Imports
 
-import pyendpoints
-from pyendpoints import TruthEndpoint
-import inspect
-from ntpupdater import NTPUpdater
+from pysync.endpoints.opt0 import *
+# import inspect
+from pysync.ntpupdater import NTPUpdater
 import queue
 import time
 import pandas as pd
 
-# Helper Function
+# # Helper Function
 
-def get_all_endpoints():
-    '''
-    Used to initiate an EndpointTester object with one of each endpoint
+# def get_all_endpoints():
+#     '''
+#     Used to initiate an EndpointTester object with one of each endpoint
 
-    Returns dict {name:str : endpoint object}
-    '''
-    returndict = {}
-    all_classes = inspect.getmembers(pyendpoints, inspect.isclass)
-    for name, class_ in all_classes:
-        # only keep classes that are from endpoints and not TruthEndpoint
-        if (class_.__module__ == pyendpoints.__name__) and (name != 'TruthEndpoint'):
-            returndict[name] = class_()
-    return returndict
+#     Returns dict {name:str : endpoint object}
+#     '''
+#     returndict = {}
+#     all_classes = inspect.getmembers(pyendpoints, inspect.isclass)
+#     for name, class_ in all_classes:
+#         # only keep classes that are from endpoints and not TruthEndpoint
+#         if (class_.__module__ == pyendpoints.__name__) and (name != 'TruthEndpoint'):
+#             returndict[name] = class_()
+#     return returndict
 
 # Class
 
@@ -67,13 +66,13 @@ class EndpointTester:
 
         # create truth updater and truth endpoint
         self.truth_updater = NTPUpdater(truth_interval)
-        self.truth_endpoint = TruthEndpoint(self.push_reciever)
-        self.truth_updater.subscribe(self.truth_endpoint.callback)
+        self.truth_endpoint = Truth(self.push_reciever)
+        self.truth_updater.link_endpoint(self.truth_endpoint)
 
         # create test updater and add all other endpoints to it
         self.test_updater = NTPUpdater(test_interval)
         for endpoint in endpoint_dict.values():
-            self.test_updater.subscribe(endpoint.callback)
+            self.test_updater.link_endpoint(endpoint)
 
         # start test before truth so sync is done before push is called
         self.test_updater.run_threaded()
@@ -160,10 +159,10 @@ class EndpointTester:
 if __name__ == '__main__':
     #all_targets = get_all_endpoints()
     all_targets = {
-        'Simple': pyendpoints.SimpleEndpoint(),
-        'Unadjusted': pyendpoints.UnadjustedEndpoint(),
-        'UseLastError': pyendpoints.UseLastErrorEndpoint(900)
+        'Simple': Simple(),
+        'Unadjusted': Unadjusted(),
+        'UseLastError': LastError()
     }
-    tester = EndpointTester(30,900,14400,all_targets)
+    tester = EndpointTester(30,900,3600,all_targets)
     #tester = EndpointTester(1,3,30,all_targets)
 

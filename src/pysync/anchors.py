@@ -41,7 +41,7 @@ class TimeAnchor:
         function loops repeatedly and takes the references from the smallest window.
         On my machine, this is typically 100ns.
 
-        Returns: time_ref (integer, seconds), perf_ref (integer, seconds)
+        Returns: time_ref (integer, ns), perf_ref (integer, ns)
         '''
         acquisition_list = []
         for _ in range(10): # on my machine, range of 4 is sufficient to get it down to 100 ns
@@ -58,7 +58,7 @@ class TimeAnchor:
         time_ref = data[min_idx, 1]
         perf_ref = (data[min_idx, 2] + data[min_idx, 0])//2
 
-        return time_ref*1e-9, perf_ref*1e-9
+        return time_ref, perf_ref
 
     def _get_simultaneous_references(self):
         '''
@@ -86,8 +86,8 @@ class TimeAnchor:
         if not isinstance(other_anchor, TimeAnchor):
             raise TypeError('Can only compare drift between two TimeAnchor objects')
         
-        time_ref_delta = abs(self.time_ref*1e9 - other_anchor.time_ref*1e9)
-        perf_ref_delta = abs(self.perf_ref*1e9 - other_anchor.perf_ref*1e9)
+        time_ref_delta = abs(self.time_ref - other_anchor.time_ref)
+        perf_ref_delta = abs(self.perf_ref - other_anchor.perf_ref)
 
         return abs(time_ref_delta-perf_ref_delta) > tolerance
 
@@ -114,4 +114,4 @@ class OffsetAnchor(TimeAnchor):
 
 if __name__ == '__main__':
     for i in range(1):
-        anchor = TimeAnchor(1000)
+        anchor = TimeAnchor()
