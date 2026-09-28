@@ -6,7 +6,7 @@ Used for testing the accuracy of endpoints and saving/plotting data
 
 from pysync.endpoints.opt0 import *
 # import inspect
-from pysync.ntpupdater import NTPUpdater
+from pysync.ntpupdater import NTPUpdater_debug
 import queue
 import time
 import pandas as pd
@@ -41,7 +41,8 @@ class EndpointTester:
                  test_interval:int, 
                  test_time:int,
                  endpoint_dict:list[(str,object)],
-                 save_path:str = 'testdata.csv'):
+                 save_path:str = 'testdata.csv',
+                 iteration_to_fail:int=None):
         '''
         truth_interval: seconds between each true time point
         test_interval: seconds between each NTP sync for endpoints
@@ -49,6 +50,7 @@ class EndpointTester:
         test_time: total time for the test to run
         endpoint_dict: dict {name:str : endpoint object} to be tested
         save_path: path to save data to (must end in .csv)
+        iteration: 0-indexed number indicating which sync to deliberately fail
         '''
         self.queue = queue.Queue()
         self.truth_interval = truth_interval
@@ -70,7 +72,9 @@ class EndpointTester:
         self.truth_updater.link_endpoint(self.truth_endpoint)
 
         # create test updater and add all other endpoints to it
-        self.test_updater = NTPUpdater(test_interval)
+        self.test_updater = NTPUpdater_debug(test_interval)
+        if iteration_to_fail:
+            self.test_updater.emulate_connection_loss(iteration_to_fail)
         for endpoint in endpoint_dict.values():
             self.test_updater.link_endpoint(endpoint)
 
@@ -163,6 +167,8 @@ if __name__ == '__main__':
         'Unadjusted': Unadjusted(),
         'UseLastError': LastError()
     }
-    tester = EndpointTester(30,900,3600,all_targets)
+    tester = EndpointTester(30,900,4500,all_targets, iteration_to_fail=2)
     #tester = EndpointTester(1,3,30,all_targets)
+
+# TODO: move this whole folder outside of pysync I think
 

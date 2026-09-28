@@ -12,7 +12,7 @@ from pysync.anchors import TimeAnchor, OffsetAnchor
 import functools
 import time
 
-# Class
+# Classes
 
 class NTPUpdater:
     '''
@@ -43,6 +43,45 @@ class NTPUpdater:
 
         if self.optimization_flag == 2:
             pass # TODO: call cpp to start l1 clock
+
+    def link_endpoint(self,endpoint):
+        '''
+        Links the NTPUpdater to an endpoint. When there is a new offset from the NTPUpdater, 
+        the link allows a callback in the endpoint to be called, updating the info.
+        Also shares other info, like interval.
+
+        Endpoint: any public class in the pyendpoints.py file # TODO: change file name if necessary
+        '''
+        if self._loop is None or not self._loop.is_running():
+            if endpoint not in self._linked_endpoints:
+                self._linked_endpoints.append(endpoint)
+                endpoint._link_to_updater(self)
+        else:
+            print('link_endpoint() method: NTPUpdater is running so endpoint cannot be linked') # TODO: test this
+
+    def run_async(self):
+        '''
+        Runs the updater using asyncio - blocking
+        (not recommended for fast reponse times)
+        '''
+        if self._loop is None or not self._loop.is_running():
+            asyncio.run(self._worker()) # TODO: make sure this works
+        else:
+            print('run_async() method: NTPUpdater is already running')
+
+    def run_threaded(self):
+        '''
+        Runs the updater using threads - not blocking
+        (Recommended for fast response)
+        '''
+        if self._loop is None or not self._loop.is_running():
+            syncthread = threading.Thread(
+                target=lambda: asyncio.run(self._worker()), # necessary because worker is async
+                daemon=True
+                )
+            syncthread.start()
+        else:
+            print('run_threaded() method: NTPUpdater is already running')
 
     @staticmethod
     def verify_drift(func):
@@ -75,27 +114,6 @@ class NTPUpdater:
                     print(f'Drift out of tolerance, re-running function {func.__name__}.')
                     time.sleep(0.1)
             return sync_wrapper
-    
-    def link_endpoint(self,endpoint):
-        '''
-        Links the NTPUpdater to an endpoint. When there is a new offset from the NTPUpdater, 
-        the link allows a callback in the endpoint to be called, updating the info.
-        Also shares other info, like interval.
-
-        Endpoint: any public class in the pyendpoints.py file # TODO: change file name if necessary
-        '''
-        # TODO: remove force update and make it so that this can only be called before the worker starts
-        if endpoint not in self._linked_endpoints:
-            self._linked_endpoints.append(endpoint) # store pointer to endpoint class
-            endpoint.link_to_updater(self)
-
-    def subscribe(self,callback):
-        '''
-        callback: function to be called every time there is a new offset
-        '''
-        # TODO: replace with link_endpoint
-        if callback not in self._linked_endpoint_callbacks:
-            self._linked_endpoint_callbacks.append(callback)
 
     async def _query_server(self, server:str, client):
         '''
@@ -152,7 +170,7 @@ class NTPUpdater:
         new_offset_anchor = OffsetAnchor(offset=new_offset) # TODO: change behavior based on opt flag
         return new_offset_anchor
     
-    async def update_offset(self):
+    async def _update_offset(self):
         '''
         Updates the offset and initates subscribed callbacks
         Callbacks are called with None as argument if NTP sync fails. Endpoints handle this.
@@ -181,47 +199,103 @@ class NTPUpdater:
         '''
         self._loop = asyncio.get_running_loop()
         while True:
-            await self.update_offset()
-            # TODO: make a threadsafe (async safe?) flag to indicate that we are now running. Make link_endpoint check this flag.
+            await self._update_offset()
             await asyncio.sleep(self.interval)
 
+    # TODO: Make clean shutdown for async and threads
+
+
+class NTPUpdater_debug(NTPUpdater):
+    '''
+    Subclass of NTPUpdater with dedicated features for debugging and testing
+
+    Features:
+        - Force Update: Allows for an NTP update to be called via a method instead of waiting for the interval
+        - Emulate Connection Loss: Deliberately emulates a lost connection to induce a failure state
+    '''
+    def __init__(self,
+                interval:int=300,
+                tolerance:int=1000000,
+                optimization_flag:int=0):
+        '''
+        interval: time interval in seconds between each NTP sync
+        tolerance: allowable system clock drift across the duration of the function that 
+            queries NTP servers for best offset # TODO: find optimal default value
+        optimization_flag:
+            0 - pure python implementation
+            1 - C++ implementation, but otherwise same as python
+            2 - C++ implementation, auto-calculates time once every 1 ms and stores it in l1 cache
+        '''
+        super().__init__(interval, tolerance, optimization_flag)
+        self._current_iteration = 0
+        self._iteration_to_fail = None
+    
     def force_update(self):
         '''
         Forces the NTPUpdater to get a new offset, regardless of where it is
         in the interval.
 
-        returns Future
+        WARNING: This can break the logic of endpoints that calculate time based on 
+                interval (LastError).
+
+        returns Future (only if running)
             if function call is followed by future.result(), this blocks until 
             the update finishes. Completely optional.
         '''
         if self._loop is None or not self._loop.is_running():
-            print('NTPUpdater not currently running, force update not possible')
+            print('force_update() method: failed, NTPUpdater not currently running')
             return None
         
         future = asyncio.run_coroutine_threadsafe(
-            self.update_offset(), self._loop
+            self._update_offset(), self._loop
         )
         return future
+    
+    def emulate_connection_loss(self, iteration:int):
+        '''
+        Emulates a lost connection for a predetermined NTP sync (returns None instead of an offset anchor).
+        Used for testing purposes. Must be invoked before the updater is started.
 
-    def run_async(self):
+        iteration: 0-indexed number indicating which sync to deliberately fail
         '''
-        Runs the updater using asyncio - blocking
-        (not recommended for fast reponse times)
-        '''
-        asyncio.run(self._worker())
+        if self._loop is None or not self._loop.is_running():
+            self._iteration_to_fail = iteration
+        else:
+            print('emulate_connection_loss() method: failed, NTPUpdater is already running')
 
-    def run_threaded(self):
+    async def _update_offset(self):
         '''
-        Runs the updater using threads - not blocking
-        (Recommended for fast response)
+        Updates the offset and initates subscribed callbacks
+        Callbacks are called with None as argument if NTP sync fails. Endpoints handle this.
+        Redefined here to include emulate_connection_loss compatibility 
         '''
-        syncthread = threading.Thread(
-            target=lambda: asyncio.run(self._worker()), # necessary because worker is async
-            daemon=True
-            )
-        syncthread.start()
+        iteration = self._current_iteration
+        
+        if (self._iteration_to_fail is not None) and (iteration == self._iteration_to_fail):
+            print(f"[EMULATION] Simulating network connection loss for iteration {iteration}")
+            new_offset_anchor = None
+        else:
+            new_offset_anchor = await self.get_best_offset()
 
-# TODO: Make clean shutdown for async and threads
+        if new_offset_anchor is not None:
+            print(f'New Offset is {new_offset_anchor.offset}')
+        else:
+            print('NTP Sync Failed, callbacks called with None')
+
+        for endpoint in self._linked_endpoints:
+            callback = endpoint.callback # TODO: this should work but test it out 
+            try:
+                # callback can be async or regular
+                if inspect.iscoroutinefunction(callback):
+                    await callback(new_offset_anchor) # TODO: add support for more args I think
+                else:
+                    callback(new_offset_anchor)
+            except Exception as e:
+                print(f'Callback Error: {e}')
+
+        self._current_iteration += 1
+
+
 
 if __name__ == '__main__':
     updater = NTPUpdater(5)

@@ -4,10 +4,9 @@ Provides a clock that continuously syncs with NTP and learns to be more accurate
 
 ## Quick Start Guide
 
-To recieve the adjusted time, initialize an Endpoint and call the `easy_setup` method:
+First, initialize an instance of the QuickStart class:
 ```
-example_endpoint = Endpoint()
-example_endpoint.easy_setup()
+example_endpoint = QuickStart()
 ```
 To the current adjusted time in seconds since epoch (January 1, 1970, 00:00:00 UTC), call the `now` method:
 ```

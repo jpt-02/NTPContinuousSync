@@ -44,7 +44,7 @@ class Truth:
             self.push(self.true_time)
             print(f'Truth failed a sync at {time.time()}, test may be corrupted.')
 
-    def link_to_updater(self, updater:NTPUpdater):
+    def _link_to_updater(self, updater:NTPUpdater):
         '''
         Links the endpoint to an NTPUpdater. Does nothing here, just stops the error.
         '''
@@ -81,7 +81,7 @@ class Simple:
         print('Warning: now() method called before startup finished')
         return time.time_ns()*(1e-9)
 
-    def link_to_updater(self, updater:NTPUpdater):
+    def _link_to_updater(self, updater:NTPUpdater):
         '''
         Links the endpoint to an NTPUpdater. Not strictly necessary, but allows the endpoint 
         to inherit things like interval if they are needed for certain now() calculations.
@@ -147,7 +147,7 @@ class LastError(Simple):
         perf_delta = (time.perf_counter_ns() - offset_anchor.perf_ref)*slew_coefficient
         return (offset_anchor.time_ref + perf_delta)*1e-9 + offset_anchor.offset
 
-    def link_to_updater(self, updater:NTPUpdater):
+    def _link_to_updater(self, updater:NTPUpdater):
         '''
         Links the endpoint to an NTPUpdater. Not strictly necessary, but allows the endpoint 
         to inherit things like interval if they are needed for certain now() calculations.
@@ -193,8 +193,15 @@ class LastError(Simple):
 if __name__ == '__main__':
     testpoint = Simple()
     updater = NTPUpdater(interval=5)
-    updater.link_endpoint(testpoint) # TODO: change name of link_to_endpoint so its obvious its a private method
+    updater.link_endpoint(testpoint) 
     updater.run_threaded()
+
+    # from pysync.ntpupdater import NTPUpdater_debug
+    # updater = NTPUpdater_debug(interval=5)
+    # updater.emulate_connection_loss(1)
+    # updater.link_endpoint(testpoint)
+    # updater.run_threaded()
+
 
     while True:
         time.sleep(2)
