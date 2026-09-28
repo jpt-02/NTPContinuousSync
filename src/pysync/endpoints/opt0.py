@@ -164,7 +164,6 @@ class LastError(Simple):
         intervals have passed to maintain accurate calculation.
         '''
         if new_anchor:
-            self.interval_accumulator = self.interval
 
             if not self.startup:
                 with self._lock:
@@ -185,6 +184,8 @@ class LastError(Simple):
                 self.slew_coefficient = new_slew
                 if self.now == self._now_startup:
                     self.now = self._now
+
+            self.interval_accumulator = self.interval
 
         else:
             self.interval_accumulator += self.interval
