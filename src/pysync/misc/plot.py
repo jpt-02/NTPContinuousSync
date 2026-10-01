@@ -54,6 +54,11 @@ def plot_series_data(in_path:str = '1hrfinal.csv', out_path:str = None):
         fig.write_image(f"{out_path}-light.svg")
         fig.update_layout(template="plotly_dark")
         fig.write_image(f"{out_path}-dark.svg")
+        
+        fig.update_yaxes(range=[-50, 50])
+        fig.write_image(f"{out_path}-dark-zm.svg")
+        fig.update_layout(template="plotly_white")
+        fig.write_image(f"{out_path}-light-zm.svg")
 
 
 if __name__ == '__main__':

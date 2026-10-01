@@ -174,28 +174,50 @@ Where `tolerance` is a small number that allows for floating point imprecision a
 
 ## Endpoints
 
-Classes in `pysync` that receive `OffsetAnchor`s from the `NTPUpdater` can be found in the `endpoints` folder. The purpose of an endpoint is to do the math to report the adjusted time via a `now` method. Since there are multiple ways to calculate this and the logic changes slightly depending on whether or not we are using C++ optimizations, we have a handful of endpoints, each organized by optimization (more on this in the [Optimization Flags](#optimization-flags) section). There are three types by default: `Unadjusted`, `Simple`, and `LastError`.
+Classes in `pysync` that receive `OffsetAnchor`s from the `NTPUpdater` can be found in the `endpoints` folder. The purpose of an endpoint is to do the math to report the adjusted time via a `now` method. Since there are multiple ways to calculate this and the logic changes slightly depending on whether or not we are using C++ optimizations, we have a handful of endpoints, each organized by optimization (more on this in the [Optimization Flags](#optimization-flags) section). There are three types by default: `Unadjusted`, `Simple`, and `LastError`. These are shown in **Fig 1**. This data was collected using `NTPUpdater` intervals of 900 seconds as opposed to the default 300 in order to exacerbate the effects of signal drift.
+
+> **Note 1:** You may notice that despite the error being negative, the signal drift in the unadjusted time is trending towards zero. This is because OS system time already has a Proportional-Integral (PI) controller that slowly pushes the error towards zero. It *is* possible to expose the raw hardware counter, which would undoubtedly be drifting in the direction of the already existing error, but it isn't necessary for this project and would make setup more cumbersome.
+
+> **Note 2:** In the zoomed-in view of **Fig 1**, there is significant noise in both `Simple` and `LastError` signals. This is due to the nature of our ground truth, which was to get an NTP sync once every 30 seconds (**not** for the purposes of updating the internal state of the endpoints, just to have an `offset` to compare their calculated `now`s to). As mentioned earlier, the math for an `offset` relies on an assumption of symmetric latency, which isn't true in reality.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/fig1-dark.svg#gh-dark-mode-only">
   <source media="(prefers-color-scheme: light)" srcset="assets/fig1-light.svg#gh-light-mode-only">
-  <img alt="Clock Endpoint Drift Analytics" src="assets/fig1-dark.svg">
+  <img alt="Clock Endpoint Drift" src="assets/fig1-dark.svg">
+  <figcaption>Fig 1: All three endpoints on 900s intervals</figcaption>
+</picture>
+<br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/fig1-dark-zm.svg#gh-dark-mode-only">
+  <source media="(prefers-color-scheme: light)" srcset="assets/fig1-light-zm.svg#gh-light-mode-only">
+  <img alt="Clock Endpoint Drift" src="assets/fig1-dark-zm.svg">
+  <figcaption>Fig 1 (zoomed in)</figcaption>
 </picture>
 
 ### Unadjusted
 
-The `Unadjusted` endpoint reports the system time with no other calculations. It is generally just used as a control variable. That being said, it *does* benefit from C++ optimizations, meaning it has a use case in a machine with a more precise clock. More on this in the [opt 2](#2---c-w-l1-clock) section.
+The `Unadjusted` endpoint reports the system time with no other calculations. It is generally just used as a control variable, which is its purpose in **Fig1**. That being said, it *does* benefit from C++ optimizations, meaning it has a use case in a machine with a more precise clock. More on this in the [opt 2](#2---c-w-l1-clock) section.
 
 ### Simple
 
-The `Simple` endpoint adds the `offset` to the system time using basic addition. Below is a graph showing it in action.
+The `Simple` endpoint adds the `offset` to the system time using basic addition. **Fig 1** shows its characteristic sawtooth-like signal, as it perfectly compensates for error at first but has no way of dealing with drift over time.
 
 ### LastError
+
+The `LastError` endpoint works by taking a `Simple` endpoint, looking at its error for whichever interval happened last (the end of each sawtooth in **Fig 1**), and adjusting accordingly using a slew coefficient. This calculation does rely on the interval of the `NTPUpdater`, so it handles a network connection failure by lengthening the interval for its subsequent calculation. This is shown in action in **Fig 2**, where a connection failure was emulated at 1800 seconds.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/fig2-dark.svg#gh-dark-mode-only">
   <source media="(prefers-color-scheme: light)" srcset="assets/fig2-light.svg#gh-light-mode-only">
-  <img alt="Clock Endpoint Drift Analytics" src="assets/fig2-dark.svg">
+  <img alt="Clock Endpoint Drift" src="assets/fig2-dark.svg">
+  <figcaption>Fig 2: Emulated Connection Failure at 1800s, 900s intervals</figcaption>
+</picture>
+<br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/fig2-dark-zm.svg#gh-dark-mode-only">
+  <source media="(prefers-color-scheme: light)" srcset="assets/fig2-light-zm.svg#gh-light-mode-only">
+  <img alt="Clock Endpoint Drift" src="assets/fig2-dark-zm.svg">
+  <figcaption>Fig 2 (zoomed in)</figcaption>
 </picture>
 
 ## Optimization Flags
