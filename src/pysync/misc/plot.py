@@ -12,7 +12,8 @@ def plot_series_data(in_path:str = '1hrfinal.csv', out_path:str = None):
     Plots the series data saved from the endpoint tester class
 
     in_path: path to the .csv containing the series data
-    out_path: (optional) path to where the plot should be saved
+    out_path: (optional) path to where the plot should be saved. Will be suffixed 
+    with '-light.png' or '-dark.svg' automatically.
     '''
     try:
         df = pd.read_csv(in_path)
@@ -37,7 +38,8 @@ def plot_series_data(in_path:str = '1hrfinal.csv', out_path:str = None):
         template="plotly_white" 
     )
 
-    fig.update_traces(mode="lines+markers", marker=dict(size=4)) 
+    #fig.update_traces(mode="lines+markers", marker=dict(size=4))
+    fig.update_traces(mode="lines")
     fig.update_layout(
         hovermode="x unified", 
         xaxis=dict(showgrid=True, zeroline=True),
@@ -49,11 +51,12 @@ def plot_series_data(in_path:str = '1hrfinal.csv', out_path:str = None):
         time.sleep(5)
     else:
         # Save light mode graph
-        fig.write_image(f"{out_path}/graph-light.png")
+        fig.write_image(f"{out_path}-light.svg")
         fig.update_layout(template="plotly_dark")
-        fig.write_image(f"{out_path}/graph-dark.png")
+        fig.write_image(f"{out_path}-dark.svg")
 
 
 if __name__ == '__main__':
     #plot_series_data()
-    plot_series_data(in_path='assets/1hrfinal.csv',out_path='assets')
+    plot_series_data(in_path='assets/1hrfinal.csv',out_path='assets/fig1')
+    plot_series_data(in_path='assets/emulatedfailure.csv',out_path='assets/fig2')
