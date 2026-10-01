@@ -54,6 +54,7 @@ class TimeAnchor:
         
         #min_window = np.min(deltas) # TODO: have this propagate through program to be stored for max error reference
         #print(min_window)
+        #print(deltas)
 
         time_ref = data[min_idx, 1]
         perf_ref = (data[min_idx, 2] + data[min_idx, 0])//2

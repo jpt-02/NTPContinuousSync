@@ -26,6 +26,7 @@ class NTPUpdater:
         interval: time interval in seconds between each NTP sync
         tolerance: allowable system clock drift across the duration of the function that 
             queries NTP servers for best offset # TODO: find optimal default value
+            # TODO: specify units
         optimization_flag:
             0 - pure python implementation
             1 - C++ implementation, but otherwise same as python
