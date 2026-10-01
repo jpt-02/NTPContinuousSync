@@ -217,9 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Plot data
-*.csv
-
 # vscode
 .vscode
 

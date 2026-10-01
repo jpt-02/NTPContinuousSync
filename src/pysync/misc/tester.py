@@ -165,7 +165,7 @@ if __name__ == '__main__':
     all_targets = {
         'Simple': Simple(),
         'Unadjusted': Unadjusted(),
-        'UseLastError': LastError()
+        'LastError': LastError()
     }
     tester = EndpointTester(30,900,4500,all_targets, iteration_to_fail=2)
     #tester = EndpointTester(1,3,30,all_targets)

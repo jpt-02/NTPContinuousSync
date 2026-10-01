@@ -176,6 +176,12 @@ Where `tolerance` is a small number that allows for floating point imprecision a
 
 Classes in `pysync` that receive `OffsetAnchor`s from the `NTPUpdater` can be found in the `endpoints` folder. The purpose of an endpoint is to do the math to report the adjusted time via a `now` method. Since there are multiple ways to calculate this and the logic changes slightly depending on whether or not we are using C++ optimizations, we have a handful of endpoints, each organized by optimization (more on this in the [Optimization Flags](#optimization-flags) section). There are three types by default: `Unadjusted`, `Simple`, and `LastError`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/graph-dark.png#gh-dark-mode-only">
+  <source media="(prefers-color-scheme: light)" srcset="assets/graph-light.png#gh-light-mode-only">
+  <img alt="Clock Endpoint Drift Analytics" src="assets/graph-light.png">
+</picture>
+
 ### Unadjusted
 
 The `Unadjusted` endpoint reports the system time with no other calculations. It is generally just used as a control variable. That being said, it *does* benefit from C++ optimizations, meaning it has a use case in a machine with a more precise clock. More on this in the [opt 2](#2---c-w-l1-clock) section.
@@ -194,3 +200,12 @@ The `Simple` endpoint adds the `offset` to the system time using basic addition.
 ### 1 - C++
 
 ### 2 - C++ w/ L1 Clock
+
+
+## Testing/Debug Features
+
+### Tester & Plotter
+
+### Force Update
+
+### Emulate Connection Loss
