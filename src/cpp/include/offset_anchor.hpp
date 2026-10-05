@@ -9,8 +9,8 @@ Lots of comments because I'm new to C++
 
 // Inform compiler that functions exists
 struct OffsetAnchor { 
-    double perf_ref; // monotonic clock reference in seconds
-    double time_ref;  // system clock reference in seconds
+    double perf_ref; // monotonic clock reference (ns if opt1, ms if opt2)
+    double time_ref;  // system clock reference (ns if opt1, ms if opt2)
     double offset;    // offset in seconds
 };
 

@@ -14,6 +14,9 @@ as possible.
 #include <cstdint> // gives us uint64_t, which is always 64 bits and can safely store large ms values
 #include <chrono> // system clocks
 #include "l1_clock.hpp" // custom ms-accurate clock thats faster than system calls
+#include <vector>
+#include <string>
+#include <stdexcept>
 
 // Code
 
@@ -193,20 +196,21 @@ OffsetAnchor create_offset_anchor(int optimization_flag, double offset) {
     /*
     Creates an offset anchor with an offset, time_ref, and perf_ref
 
-    Returns: {double: offset anchor in s, double: time_ref in s, double: perf_ref in s}
-    # TODO: to make this consistent with the python version just keep these in ns
+    If optimization flag is 2, l1_clock must be started before initializing this
+
+    Returns: {double: offset anchor in s, double: time_ref, double: perf_ref}
+            units for time_ref and perf_ref: ns if opt1, ms if opt2
     */
     OffsetAnchor return_anchor{};
     return_anchor.offset = offset; // in future, maybe round this for opt2 to save memory?
     if (optimization_flag == 1) {
         ConstrainedReferences references = get_constrained_references_opt1();
-        return_anchor.time_ref = references.time_ref * 1e-9;
-        return_anchor.perf_ref = references.perf_ref * 1e-9;
-        return_anchor.offset = offset;
+        return_anchor.time_ref = references.time_ref;
+        return_anchor.perf_ref = references.perf_ref;
     } else if (optimization_flag == 2) {
         ConstrainedReferences references = get_constrained_references_opt2();
-        return_anchor.time_ref = references.time_ref * 1e-3;
-        return_anchor.perf_ref = references.perf_ref * 1e-3;
+        return_anchor.time_ref = references.time_ref;
+        return_anchor.perf_ref = references.perf_ref;
     } else {
         throw std::invalid_argument("Unsupported optimization_flag: " + std::to_string(optimization_flag));
     }

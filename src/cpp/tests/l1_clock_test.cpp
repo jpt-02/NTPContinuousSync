@@ -10,16 +10,16 @@ int main() {
     // TESTS FOR l1 CLOCK
 
 
-    // start_clock(true, true);
-    // //std::this_thread::sleep_for(std::chrono::seconds(2));
-    // for (int i = 0; i < 3; ++i) {
-    //     uint64_t time_now = get_current_ms();
-    //     std::cout << "Time read from main.cpp: " << time_now << " ms\n";
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-    // }
-    // stop_clock();
+    start_clock(true, true);
+    //std::this_thread::sleep_for(std::chrono::seconds(2));
+    for (int i = 0; i < 3; ++i) {
+        uint64_t time_now = get_current_ms();
+        std::cout << "Time read from main.cpp: " << time_now << " ms\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    }
+    stop_clock();
 
-    // std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // start_clock(true, true);
     // for (int i = 0; i < 3; ++i) {
@@ -29,7 +29,7 @@ int main() {
     // }
     // stop_clock();
     
-    
+}
     // TESTS FOR SIM REFERENCES (AI SLOP)
 
     // A vector to store the 10 tuples

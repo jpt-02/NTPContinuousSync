@@ -170,5 +170,4 @@ if __name__ == '__main__':
     tester = EndpointTester(30,900,4500,all_targets, iteration_to_fail=2)
     #tester = EndpointTester(1,3,30,all_targets)
 
-# TODO: move this whole folder outside of pysync I think
 

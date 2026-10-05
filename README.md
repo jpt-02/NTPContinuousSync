@@ -20,6 +20,12 @@ To the current adjusted time in seconds since epoch (January 1, 1970, 00:00:00 U
 current_time = example_endpoint.now()
 ```
 
+## How To Use
+
+### Quick Start Options
+
+### Manual Configuration
+
 ## Edit Mode
 
 TODO: fill out
@@ -180,18 +186,21 @@ Classes in `pysync` that receive `OffsetAnchor`s from the `NTPUpdater` can be fo
 
 > **Note 2:** In the zoomed-in view of **Fig 1**, there is significant noise in both `Simple` and `LastError` signals. This is due to the nature of our ground truth, which was to get an NTP sync once every 30 seconds (**not** for the purposes of updating the internal state of the endpoints, just to have an `offset` to compare their calculated `now`s to). As mentioned earlier, the math for an `offset` relies on an assumption of symmetric latency, which isn't true in reality.
 
+Fig 1: All three endpoints on 900s intervals
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/fig1-dark.svg#gh-dark-mode-only">
   <source media="(prefers-color-scheme: light)" srcset="assets/fig1-light.svg#gh-light-mode-only">
   <img alt="Clock Endpoint Drift" src="assets/fig1-dark.svg">
-  <figcaption>Fig 1: All three endpoints on 900s intervals</figcaption>
 </picture>
 <br>
+
+Fig 1 (zoomed in)
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/fig1-dark-zm.svg#gh-dark-mode-only">
   <source media="(prefers-color-scheme: light)" srcset="assets/fig1-light-zm.svg#gh-light-mode-only">
   <img alt="Clock Endpoint Drift" src="assets/fig1-dark-zm.svg">
-  <figcaption>Fig 1 (zoomed in)</figcaption>
 </picture>
 
 ### Unadjusted
@@ -204,25 +213,32 @@ The `Simple` endpoint adds the `offset` to the system time using basic addition.
 
 ### LastError
 
-The `LastError` endpoint works by taking a `Simple` endpoint, looking at its error for whichever interval happened last (the end of each sawtooth in **Fig 1**), and adjusting accordingly using a slew coefficient. This calculation does rely on the interval of the `NTPUpdater`, so it handles a network connection failure by lengthening the interval for its subsequent calculation. This is shown in action in **Fig 2**, where a connection failure was emulated at 1800 seconds.
+The `LastError` endpoint works by taking a `Simple` endpoint, looking at its error for whichever interval happened last (the end of each sawtooth in **Fig 1**), and adjusting accordingly using a slew coefficient. It is identical to `Simple` during startup, but becomes significantly more accurate after the first interval. 
+
+The calculation for this adjustment relies on the interval of the `NTPUpdater` (it is effectively just rise over run, with interval being the run), so it handles a network connection failure by maintaining the same slew coefficient and using n*interval (n being the number of consecutive connection failures) to calculate the next slew coefficient upon the next successful NTP sync. This is shown in action in **Fig 2**, where a connection failure was emulated at 1800 seconds, followed by a successful sync at 2700 seconds.
+
+Fig 2: Emulated Connection Failure at 1800s, 900s intervals
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/fig2-dark.svg#gh-dark-mode-only">
   <source media="(prefers-color-scheme: light)" srcset="assets/fig2-light.svg#gh-light-mode-only">
   <img alt="Clock Endpoint Drift" src="assets/fig2-dark.svg">
-  <figcaption>Fig 2: Emulated Connection Failure at 1800s, 900s intervals</figcaption>
 </picture>
 <br>
+
+Fig 2 (zoomed in)
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/fig2-dark-zm.svg#gh-dark-mode-only">
   <source media="(prefers-color-scheme: light)" srcset="assets/fig2-light-zm.svg#gh-light-mode-only">
   <img alt="Clock Endpoint Drift" src="assets/fig2-dark-zm.svg">
-  <figcaption>Fig 2 (zoomed in)</figcaption>
 </picture>
 
 ## Optimization Flags
 
 ### 0 - Pure Python
+
+Optimization flag 0 - also the default option - is a pure python implementation, with all calculations taking place in python.
 
 ### 1 - C++
 
@@ -233,6 +249,18 @@ The `LastError` endpoint works by taking a `Simple` endpoint, looking at its err
 
 ### Tester & Plotter
 
-### Force Update
+The `EndpointTester` class is designed to test an endpoint's `now` calculation to visualize its error over time. This is the class used to generate the graphs in this repository, and it is capable of testing any endpoint as long as it can link with an `NTPUpdater` and has a `now` method.
 
-### Emulate Connection Loss
+There is a `plot_series_data` function included in the `plot.py` file as well. There's nothing special about it, its just an easy way to plot the data from `EndpointTester` so I included it as a convenience.
+
+### Debug Updater
+
+To accommodate testing and debugging, `NTPUpdater_debug` was created. It has the following two features.
+
+#### Force Update
+
+The `force_update`function forces each endpoint that `NTPUpdater_debug` is linked to to update with new sync data. This can break certain endpoints that rely on interval for their calculation, like `LastError`.
+
+#### Emulate Connection Loss
+
+The `emulate_connection_loss` function is used to test the scenario where an `NTPUpdater` is unable to make a successful NTP sync, returning `None` instead of an `OffsetAnchor` object. Since endpoints are responsible for handling this failure case, this is a useful way to test them.
