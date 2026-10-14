@@ -5,16 +5,26 @@
 #include "l1_clock.hpp" // Pulls in the extern for current_ms
 //#include "sim_references.hpp" 
 
+
+namespace chrono = std::chrono;
+
 int main() {
     
     // TESTS FOR l1 CLOCK
 
 
     start_clock(true, true);
-    //std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    
+    uint64_t start = chrono::duration_cast<chrono::milliseconds>(
+            chrono::steady_clock::now().time_since_epoch()
+        ).count();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10)); //prevents underflow
+
     for (int i = 0; i < 3; ++i) {
         uint64_t time_now = get_current_ms();
-        std::cout << "Time read from main.cpp: " << time_now << " ms\n";
+        std::cout << "Time read from main.cpp: " << time_now-start << " ms\n";
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     }
     stop_clock();
@@ -29,6 +39,8 @@ int main() {
     // }
     // stop_clock();
     
+    // TODO: add return 0 here
+
 }
     // TESTS FOR SIM REFERENCES (AI SLOP)
 

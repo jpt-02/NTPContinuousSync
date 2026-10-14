@@ -9,6 +9,8 @@ is the size of the window. References using chrono are taken in raw form before 
 as possible.
 */
 
+// TODO: clean out the legacy code once everything for sure works
+
 // imports
 #include "offset_anchor.hpp"
 #include <cstdint> // gives us uint64_t, which is always 64 bits and can safely store large ms values
@@ -24,16 +26,22 @@ namespace chrono = std::chrono; // shortens import for usage in code
 
 // STRUCTS
 
-struct RawReferences_opt1 {
+// struct RawReferences_opt1 {
+//     chrono::steady_clock::time_point p1_raw;
+//     chrono::system_clock::time_point timeref_raw;
+//     chrono::steady_clock::time_point p2_raw;
+// };
+
+// struct RawReferences_opt2 {
+//     uint64_t p1_raw;
+//     chrono::system_clock::time_point timeref_raw;
+//     uint64_t p2_raw;
+// };
+
+struct RawReferences {
     chrono::steady_clock::time_point p1_raw;
     chrono::system_clock::time_point timeref_raw;
     chrono::steady_clock::time_point p2_raw;
-};
-
-struct RawReferences_opt2 {
-    uint64_t p1_raw;
-    chrono::system_clock::time_point timeref_raw;
-    uint64_t p2_raw;
 };
 
 struct ParsedReferences {
@@ -49,9 +57,33 @@ struct ConstrainedReferences {
 
 // FUNCTIONS
 
-RawReferences_opt1 get_raw_references_opt1() {
+// RawReferences_opt1 get_raw_references_opt1() {
+//     /*
+//     Gets raw clock references for opt1.
+
+//     Returns: {monotonic clock time point, system clock time point, monotonic clock time point}
+//     */
+//     auto p1_raw = chrono::steady_clock::now();
+//     auto timeref_raw = chrono::system_clock::now();
+//     auto p2_raw = chrono::steady_clock::now();
+//     return {p1_raw, timeref_raw, p2_raw};
+// }
+
+// RawReferences_opt2 get_raw_references_opt2() {
+//     /*
+//     Gets raw clock references for opt2.
+
+//     Returns: {int: l1_clock time in ms, system clock time point, int: l1_clock time in ms}
+//     */
+//     auto p1 = get_current_ms();
+//     auto timeref_raw = chrono::system_clock::now();
+//     auto p2 = get_current_ms();
+//     return {p1, timeref_raw, p2};
+// }
+
+RawReferences get_raw_references() {
     /*
-    Gets raw clock references for opt1.
+    Gets raw clock references.
 
     Returns: {monotonic clock time point, system clock time point, monotonic clock time point}
     */
@@ -61,19 +93,46 @@ RawReferences_opt1 get_raw_references_opt1() {
     return {p1_raw, timeref_raw, p2_raw};
 }
 
-RawReferences_opt2 get_raw_references_opt2() {
-    /*
-    Gets raw clock references for opt2.
+// ParsedReferences process_references_opt1(const RawReferences_opt1& raw) { // & means pass as reference instead of copying
+//     /*
+//     Gets parsed references for opt1.
 
-    Returns: {int: l1_clock time in ms, system clock time point, int: l1_clock time in ms}
-    */
-    auto p1 = get_current_ms();
-    auto timeref_raw = chrono::system_clock::now();
-    auto p2 = get_current_ms();
-    return {p1, timeref_raw, p2};
-}
+//     Returns: {int: monotonic time in ns, int: system time in ns, int: monotonic time in ns}
+//     */
+//     const auto & [p1_raw, timeref_raw, p2_raw] = raw;
 
-ParsedReferences process_references_opt1(const RawReferences_opt1& raw) { // & means pass as reference instead of copying
+//     uint64_t p1 = chrono::duration_cast<chrono::nanoseconds>( 
+//         p1_raw.time_since_epoch()
+//     ).count();
+
+//     uint64_t timeref = chrono::duration_cast<chrono::nanoseconds>( 
+//         timeref_raw.time_since_epoch()
+//     ).count();
+
+//     uint64_t p2 = chrono::duration_cast<chrono::nanoseconds>( 
+//         p2_raw.time_since_epoch()
+//     ).count();
+
+//     return {p1, timeref, p2};
+// }
+
+// ParsedReferences process_references_opt2(const RawReferences_opt2& raw) {
+//     /*
+//     Gets raw clock references for opt2.
+
+//     Returns: {int: l1_clock time in ms, int: system time in ms, int: l1_clock time in ms}
+//     */
+//     const auto & [p1, timeref_raw, p2] = raw;
+
+//     uint64_t timeref = chrono::duration_cast<chrono::milliseconds>(
+//         timeref_raw.time_since_epoch()
+//     ).count();
+
+//     // Make a tuple and return
+//     return {p1, timeref, p2};
+// }
+
+ParsedReferences process_references_opt1(const RawReferences& raw) { // & means pass as reference instead of copying
     /*
     Gets parsed references for opt1.
 
@@ -96,35 +155,122 @@ ParsedReferences process_references_opt1(const RawReferences_opt1& raw) { // & m
     return {p1, timeref, p2};
 }
 
-ParsedReferences process_references_opt2(const RawReferences_opt2& raw) {
+ParsedReferences process_references_opt2(const RawReferences& raw) { // & means pass as reference instead of copying
     /*
-    Gets raw clock references for opt2.
+    Gets parsed references for opt2.
 
-    Returns: {int: l1_clock time in ms, int: system time in ms, int: l1_clock time in ms}
+    Returns: {int: monotonic time in ms, int: system time in ms, int: monotonic time in ms}
     */
-    const auto & [p1, timeref_raw, p2] = raw;
+    const auto & [p1_raw, timeref_raw, p2_raw] = raw;
 
-    uint64_t timeref = chrono::duration_cast<chrono::milliseconds>(
+    uint64_t p1 = chrono::duration_cast<chrono::milliseconds>( 
+        p1_raw.time_since_epoch()
+    ).count();
+
+    uint64_t timeref = chrono::duration_cast<chrono::milliseconds>( 
         timeref_raw.time_since_epoch()
     ).count();
 
-    // Make a tuple and return
+    uint64_t p2 = chrono::duration_cast<chrono::milliseconds>( 
+        p2_raw.time_since_epoch()
+    ).count();
+
     return {p1, timeref, p2};
 }
 
+// ConstrainedReferences get_constrained_references_opt1() {
+//     /*
+//     Loops through 10 pairs of raw references, parses them, and returns the pair of parsed 
+//     references with the smallest time window between p1 and p2. 
+
+//     Returns: {int: system time in ns, int: monotonic time in ns}
+//     */
+    
+//     // quickly get all raw references
+//     std::vector<RawReferences_opt1> history;
+//     history.reserve(10); // Reserves memory so the loop stays fast
+//     for (int i=0; i<10; i++) {
+//         RawReferences_opt1 result = get_raw_references_opt1();
+
+//         history.push_back(result);
+//     }
+
+//     // parse references and do math
+//     uint64_t min_distance = UINT64_MAX;
+//     ParsedReferences best_parsed{};
+//     for (int i = 0; i < 10; i++) {
+//         ParsedReferences parsed = process_references_opt1(history[i]);
+        
+//         // Calculate absolute distance between p1 and p2
+//         uint64_t dist = (parsed.p1 > parsed.p2) ? (parsed.p1 - parsed.p2) : (parsed.p2 - parsed.p1);
+
+//         if (dist < min_distance) {
+//             min_distance = dist;
+//             best_parsed = parsed;
+//         }
+//     }
+
+//     // Return the timeref and the average of p1 and p2
+//     ConstrainedReferences constrained_ref;
+//     constrained_ref.time_ref = best_parsed.timeref;
+//     constrained_ref.perf_ref = (best_parsed.p1 + best_parsed.p2) / 2;
+
+//     return constrained_ref;
+// }
+
+// ConstrainedReferences get_constrained_references_opt2() {
+//     /*
+//     Loops through 10 pairs of raw references, parses them, and returns the pair of parsed 
+//     references with the smallest time window between p1 and p2. 
+
+//     Returns: {int: system time in ms, int: l1_clock time in ms}
+//     */
+    
+//     // quickly get all raw references
+//     std::vector<RawReferences_opt2> history;
+//     history.reserve(10); // Reserves memory so the loop stays fast
+//     for (int i=0; i<10; i++) {
+//         RawReferences_opt2 result = get_raw_references_opt2();
+
+//         history.push_back(result);
+//     }
+
+//     // parse references and do math
+//     uint64_t min_distance = UINT64_MAX;
+//     ParsedReferences best_parsed{};
+//     for (int i = 0; i < 10; i++) {
+//         ParsedReferences parsed = process_references_opt2(history[i]);
+        
+//         // Calculate absolute distance between p1 and p2
+//         uint64_t dist = (parsed.p1 > parsed.p2) ? (parsed.p1 - parsed.p2) : (parsed.p2 - parsed.p1);
+
+//         if (dist < min_distance) {
+//             min_distance = dist; // TODO: put some prints in here to see if its working correctly
+//             best_parsed = parsed;
+//         }
+//     }
+
+//     // Return the timeref and the average of p1 and p2
+//     ConstrainedReferences constrained_ref;
+//     constrained_ref.time_ref = best_parsed.timeref;
+//     constrained_ref.perf_ref = (best_parsed.p1 + best_parsed.p2) / 2;
+
+//     return constrained_ref;
+// }
+
 ConstrainedReferences get_constrained_references_opt1() {
     /*
-    Loops through 10 pairs of raw references, parses them, and returns the pair of parsed 
+    Loops through 10 pairs of opt1 raw references, parses them, and returns the pair of parsed 
     references with the smallest time window between p1 and p2. 
 
     Returns: {int: system time in ns, int: monotonic time in ns}
     */
     
     // quickly get all raw references
-    std::vector<RawReferences_opt1> history;
+    std::vector<RawReferences> history;
     history.reserve(10); // Reserves memory so the loop stays fast
     for (int i=0; i<10; i++) {
-        RawReferences_opt1 result = get_raw_references_opt1();
+        RawReferences result = get_raw_references();
 
         history.push_back(result);
     }
@@ -154,17 +300,17 @@ ConstrainedReferences get_constrained_references_opt1() {
 
 ConstrainedReferences get_constrained_references_opt2() {
     /*
-    Loops through 10 pairs of raw references, parses them, and returns the pair of parsed 
+    Loops through 10 pairs of opt2 raw references, parses them, and returns the pair of parsed 
     references with the smallest time window between p1 and p2. 
 
-    Returns: {int: system time in ms, int: l1_clock time in ms}
+    Returns: {int: system time in ms, int: monotonic time in ms}
     */
     
     // quickly get all raw references
-    std::vector<RawReferences_opt2> history;
+    std::vector<RawReferences> history;
     history.reserve(10); // Reserves memory so the loop stays fast
     for (int i=0; i<10; i++) {
-        RawReferences_opt2 result = get_raw_references_opt2();
+        RawReferences result = get_raw_references();
 
         history.push_back(result);
     }
@@ -179,7 +325,7 @@ ConstrainedReferences get_constrained_references_opt2() {
         uint64_t dist = (parsed.p1 > parsed.p2) ? (parsed.p1 - parsed.p2) : (parsed.p2 - parsed.p1);
 
         if (dist < min_distance) {
-            min_distance = dist; // TODO: put some prints in here to see if its working correctly
+            min_distance = dist;
             best_parsed = parsed;
         }
     }

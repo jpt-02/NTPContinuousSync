@@ -17,7 +17,10 @@ Lots of comments because I'm new to C++
 
 namespace chrono = std::chrono; // shortens import for usage in code
 
-alignas(std::hardware_destructive_interference_size) std::atomic<uint64_t> current_ms{0};
+uint64_t default_now = chrono::duration_cast<chrono::milliseconds>(
+            chrono::steady_clock::now().time_since_epoch()
+        ).count();
+alignas(std::hardware_destructive_interference_size) std::atomic<uint64_t> current_ms{default_now};
 
 // Private variables for thread and whether or not its running
 static std::atomic<bool> running{true};
@@ -58,9 +61,14 @@ void update_clock_loop(bool confine_to_core) {
 
     auto start_time = chrono::steady_clock::now(); // steady_clock is monotonic. No units yet, thats handled later
     while (running.load(std::memory_order_relaxed)){ // memory order relaxed = doesnt care about any other threads, just instantly does what it needs to do. Load is how you read an atomic var with thread safety.
-        auto now = chrono::steady_clock::now(); // get the time right now
-        auto duration = chrono::duration_cast<chrono::milliseconds>(now - start_time); // calculates duration, uses type cast to make into ms
-        current_ms.store(duration.count(), std::memory_order_relaxed); // uses .count to turn C++ time point into regular integer, stores in current_ms variable with thread safety
+        
+        uint64_t now = chrono::duration_cast<chrono::milliseconds>(
+            chrono::steady_clock::now().time_since_epoch()
+        ).count(); // right now in ms as a 64 bit int
+        current_ms.store(now, std::memory_order_relaxed); // stores with thread safety
+        //auto now = chrono::steady_clock::now(); // get the time right now
+        //auto duration = chrono::duration_cast<chrono::milliseconds>(now - start_time); // calculates duration, uses type cast to make into ms
+        //current_ms.store(duration.count(), std::memory_order_relaxed); // uses .count to turn C++ time point into regular integer, stores in current_ms variable with thread safety
 
         // TODO: get rid of the difference and make it ms since epoch?
 
