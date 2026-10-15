@@ -7,13 +7,12 @@ Contains cpp versions of each python endpoint
 #include "offset_anchor.hpp"
 #include <atomic>
 #include <array>
-#include <rcu>
 
 class CppSimple {
     /*
     TODO: finish writing this 
 
-    C++ implementation of the Simlpe endpoint. Uses RCU to update the offset anchor. 
+    C++ implementation of the Simlpe endpoint. Uses RCU (coming soon) to update the offset anchor. 
     */
     private:
         

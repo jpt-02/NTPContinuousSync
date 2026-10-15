@@ -1,4 +1,4 @@
-# NTPContinuousSync TODO: change name
+# NTPContinuousSync
 
 ## Contents
 
@@ -242,8 +242,11 @@ Optimization flag 0 - also the default option - is a pure python implementation,
 
 ### 1 - C++
 
+Coming soon!
+
 ### 2 - C++ w/ L1 Clock
 
+Coming soon!
 
 ## Testing/Debug Features
 
